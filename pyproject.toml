@@ -1,0 +1,37 @@
+[project]
+name = "afgl"
+version = "0.1.0"
+description = "Accelerated Filtering on Graphs using Lanczos (AFGL)"
+authors = [{ name = "Alberto Defendi", email = "a.defendi@studenti.unipi.it" }]
+dependencies = [
+    "matplotlib>=3.10.8",
+    "numpy>=2.0.0",
+    "pygsp>=0.6.1",
+    "scipy>=1.10.0",
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "MIT" }
+
+[project.scripts]
+afgl-run = "afgl.main:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[depencency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+    "pytest>=8.0.0",
+    "ruff>=0.4.0",
+]
+
+[tool.ruff]
+# The standard modern line length
+line-length = 88
+# Enable "E" (Error) and "F" (Flake8) codes by default
+select = ["E", "F", "I"] # "I" handles automatic import sorting (isort)
+
+[tool.ruff.lint]
+ignore = []

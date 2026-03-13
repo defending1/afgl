@@ -1,0 +1,44 @@
+# --- Python (Modern uv/Ruff) ---
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# --- LaTeX (Comprehensive) ---
+*.aux
+*.log
+*.toc
+*.out
+*.pdf
+*.synctex.gz
+*.fdb_latexmk
+latexrun.db
+.latexrun.db*
+fls
+*.fls
+*.blg
+*.bbl
+*.run.xml
+*.bcf
+*.nav
+*.snm
+*.vrb
+*.lof
+*.lot
+*-blx.bib
+
+# --- System / OS ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
