@@ -4,7 +4,7 @@ Project description
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Setup
 
@@ -19,3 +19,13 @@ Project description
 - **Test**: `uv run pytest`
 - **Format**: `uv run ruff format .`
 - **Lint**: `uv run ruff check . --fix`
+
+## References
+
+[1] Susnjara et al., Accelerated filtering on graphs using Lanczos method.
+
+[2] https://epfl-lts2.github.io/gspbox-html/
+
+## Online guides
+
+https://every-algorithm.github.io/2024/05/23/lanczos_algorithm.html
