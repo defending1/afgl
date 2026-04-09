@@ -3,11 +3,12 @@
 
 % Load bibliography
 \addbibresource{references.bib}
-\usepackage{lipsum} % Just for the demo text
 
 % --- Document Metadata ---
-\title{\normalfont\scshape\Large The Geometry of Complex Systems}
-\author{\normalfont\itshape A. N. Other}
+\title{%
+    Accelerated filtering on graphs using Lanczos method
+    \\ \large Relazione del progetto di Calcolo Scientifico}
+\author{Alberto Defendi}
 \date{\small\today}
 
 \begin{document}
@@ -15,30 +16,15 @@
 \maketitle
 
 \begin{abstract}
-    \noindent \small \textbf{\textit{Abstract.}} \lipsum[1][1-4]
+    \noindent \small \textbf{\textit{Abstract.}}
 \end{abstract}
 
 \section{Introduction}
-This document uses a custom class file (\texttt{mathreport.cls}). This keeps the main file clean. The typography is set to Bringhurst's standards: wide margins, Palatino font, and old-style figures (e.g., 12345).
 
-\section{Mathematical Theory}
-We define our primary operator in the Hilbert space $\mathcal{H}$.
+Introduciamo alcuni concetti di teoria dei grafi e alcuni risultati del corso che verranno usati nel corso della sperimentazione.
+Scopo del progetto è verificare numericamente i risultati 
 
-\begin{definition}[Compact Operator]
-    An operator $T: X \to Y$ is compact if $\overline{T(B_X)}$ is compact in $Y$.
-\end{definition}
-
-\begin{theorem}[Spectral Theorem]
-    There exists an orthonormal basis of eigenvectors.
-\end{theorem}
-
-Consider the harmonic series shown in \cref{eq:harmonic}. The styling is handled entirely by the external class file.
-\begin{equation} \label{eq:harmonic}
-    H_n = \sum_{k=1}^n \frac{1}{k} \approx \ln n + \gamma
-\end{equation}
-
-\section{Results and Discussion}
-\lipsum[2-4]
+Nell'analisi consideriamo i grafi di Erdo''s-Reiny (Figura)
 
 \printbibliography
 

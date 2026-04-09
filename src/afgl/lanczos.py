@@ -35,6 +35,8 @@ def lanczos(L, s, M):
 
         if j < M - 1:
             beta[j] = LA.norm(v_tilde)
+            if beta[j] == 0:
+                break
             V[:, j + 1] = v_tilde / beta[j]
 
     return [V, alp, beta]
