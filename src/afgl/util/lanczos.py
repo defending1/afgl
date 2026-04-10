@@ -2,10 +2,12 @@ import numpy as np
 import numpy.linalg as LA
 
 """
+Classic Lanczos method (without re-orthogonalization)
+
 Arguments
-L Real valued NxN symmetric matrix
-s vector of size N
-M natural number indicating basis size
+L : Real valued NxN symmetric matrix
+s : vector of size N
+M : natural number indicating basis size
 
 Returns
 -------

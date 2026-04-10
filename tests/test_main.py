@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.linalg as LA
-from afgl.lanczos import lanczos
+from afgl.util.build_T_matrix import build_T_matrix
+from afgl.util.lanczos import lanczos
 
 """
 Todo: better test case
@@ -18,7 +19,7 @@ def test_lanczos_return_correct_solution():
     s = np.random.randint(1, 10, N)
     [V, alp, beta] = lanczos(L, s, M)
 
-    T = np.diag(alp) + np.diag(beta, -1) + np.diag(beta, 1)
+    T = build_T_matrix(alp, beta)
 
     x = LA.solve(L, s)
     e_1 = np.zeros(M)
