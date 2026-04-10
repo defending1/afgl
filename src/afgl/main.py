@@ -21,19 +21,52 @@ def plot_setup():
     # TODO match font with document
 
 
-def test_plot():
-    fig, ax = plt.subplots(figsize=(3.3, 2.5))
-    G = graphs.ErdosRenyi()
-    # G = graphs.Sensor()
+def latex_sci(val, decimals=2):
+    """Converts a value to LaTeX scientific notation A x 10^{B}."""
+    if val == 0:
+        return "0"
+    exponent = int(np.floor(np.log10(abs(val))))
+    mantissa = val / 10**exponent
+    return rf"{mantissa:.{decimals}f} \times 10^{{{exponent}}}"
 
-    G.set_coordinates()
 
-    signal = np.sin(G.coords[:, 0] * 10)
+def plot_graphs(G_ER, G_Sensor, s, N, p):
+    fig, axs = plt.subplots(2, 2, figsize=(6.6, 5))
 
-    G.plot(signal, ax=ax, vertex_size=15, edge_width=0.5, edge_color="gray")
-    ax.set_title(r"Sensor Network $\mathcal{G} = (\mathcal{V}, \mathcal{E})$")
-    ax.set_axis_off()
-    plt.savefig("./out/test.pdf", bbox_inches="tight")
+    # Set coordinates
+    G_ER.set_coordinates()
+    G_Sensor.set_coordinates()
+
+    signal_ER = filter_signal_with_fourier(G_ER, s)
+    signal_S = filter_signal_with_fourier(G_Sensor, s)
+
+    # TOP LEFT
+    G_ER.plot(s, ax=axs[0, 0], vertex_size=15, edge_width=0.5, edge_color="gray")
+    axs[0, 0].set_title(rf"Erdős-Rényi Graph $(N = {N}, p = {p})$", pad=20)
+    axs[0, 0].set_axis_off()
+
+    # BOTTOM LEFT
+    G_ER.plot(
+        signal_ER, ax=axs[1, 0], vertex_size=15, edge_width=0.5, edge_color="gray"
+    )
+    axs[1, 0].set_title("", pad=20)
+    axs[1, 0].set_axis_off()
+
+    # TOP RIGHT
+    G_Sensor.plot(s, ax=axs[0, 1], vertex_size=15, edge_width=0.5, edge_color="gray")
+    axs[0, 1].set_title(rf"Sensor Network $(N = {N})$", pad=20)
+    axs[0, 1].set_axis_off()
+
+    # BOTTOM RIGHT
+    G_Sensor.plot(
+        signal_S, ax=axs[1, 1], vertex_size=15, edge_width=0.5, edge_color="gray"
+    )
+    axs[1, 1].set_title("", pad=20)
+    axs[1, 1].set_axis_off()
+
+    # Prevent label/title overlap
+
+    plt.savefig("./out/printed_graphs.pdf", bbox_inches="tight")
 
 
 def g_extended(t):
@@ -78,20 +111,17 @@ def latex_log_formatter(y, pos):
     return f"$10^{{{n}}}$"
 
 
-def example_1():
-    N = 500
-    M_MAX = 200
-    p = 0.04
+def filter_signal_with_fourier(G, s):
+    G.compute_fourier_basis()
+    U = G.U
+    GLs = (U @ np.diag(g(G.e)) @ U.T) @ s
+    # GLs = g(L) @ s
+    return GLs
 
-    G = graphs.ErdosRenyi(N, p)
-    # G = graphs.Sensor(N)
 
+def run_comparison_1_for_graph(G, s, M_MAX):
     G.compute_laplacian("combinatorial")
     L = G.L
-
-    s = np.random.randint(1, 10000, N)
-    # Normalize s as in request
-    s = s / LA.norm(s)
 
     j = 3
     [V, alp, beta] = lanczos(L, s, M_MAX + j)
@@ -99,9 +129,7 @@ def example_1():
     lanczos_err = np.zeros(M_MAX + j)
     true_err = np.zeros(M_MAX + j)
 
-    G.compute_fourier_basis()
-    U = G.U
-    GLs = (U @ np.diag(g(G.e)) @ U.T) @ s
+    GLs = filter_signal_with_fourier(G, s)
     # GLs = g(L) @ s
     for M in range(2, M_MAX + j):
         g_M = compute_g_M(V[:, 0:M], alp[0:M], beta[0 : M - 1], s)
@@ -110,17 +138,49 @@ def example_1():
         lanczos_err[M - 1] = LA.norm(g_Mj - g_M)
         true_err[M - 1] = LA.norm(GLs - g_M)
 
-    fig, ax = plt.subplots(figsize=(3.3, 2.5))
+    return [lanczos_err, true_err]
 
-    ax.plot(lanczos_err, label="Error estimate")
-    ax.plot(true_err, label="Error")
 
-    ax.xaxis.set_major_locator(ticker.MultipleLocator(50))
-    ax.set_yscale("log")
-    ax.yaxis.set_major_formatter(ticker.FuncFormatter(latex_log_formatter))
+def example_1():
+    N = 500
+    M_MAX = 200
+    p = 0.04
 
-    ax.legend()
-    plt.savefig("./out/erdos_estimate.pdf", bbox_inches="tight")
+    s = np.random.randint(1, 10000, N)
+    # Normalize s as in request
+    s = s / LA.norm(s)
+
+    G_ER = graphs.ErdosRenyi(N, p)
+    G_S = graphs.Sensor(N)
+
+    [l_err_ER, t_err_ER] = run_comparison_1_for_graph(G_ER, s, M_MAX)
+    [l_err_S, t_err_S] = run_comparison_1_for_graph(G_S, s, M_MAX)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.6, 2.5))
+
+    # Left plot (Erdos-Renyi)
+    ax1.plot(l_err_ER, label=r"$\left\lVert g_{M+3} - g_M \right\rVert_2$")
+    ax1.plot(t_err_ER, label=r"$\left\lVert e_M \right\rVert_2$")
+    ax1.set_title("Erdős-Rényi graph")
+
+    # Right plot (Sensor)
+    ax2.plot(l_err_S, label=r"$\left\lVert g_{M+3} - g_M \right\rVert_2$")
+    ax2.plot(t_err_S, label=r"$\left\lVert e_M \right\rVert_2$")
+    ax2.set_title("Sensor graph")
+
+    # Apply identical formatting to both subplots
+    for ax in (ax1, ax2):
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(50))
+        ax.set_yscale("log")
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(latex_log_formatter))
+        ax.legend()
+
+    # Prevents overlapping of labels between the subplots
+    plt.tight_layout()
+
+    plt.savefig("./out/ex1_estimate.pdf", bbox_inches="tight")
+
+    plot_graphs(G_ER, G_S, s, N, p)
 
 
 def run():
