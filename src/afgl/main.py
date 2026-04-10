@@ -23,8 +23,8 @@ def plot_setup():
 
 def test_plot():
     fig, ax = plt.subplots(figsize=(3.3, 2.5))
-    # G = graphs.ErdosRenyi()
-    G = graphs.Sensor()
+    G = graphs.ErdosRenyi()
+    # G = graphs.Sensor()
 
     G.set_coordinates()
 
@@ -60,8 +60,8 @@ Computes the approximation g_M (see [1]) using Lanczos
 """
 
 
-def compute_g_M(L, s, M):
-    [V, alp, beta] = lanczos(L, s, M)
+def compute_g_M(V, alp, beta, s):
+    M = len(alp)
     e_1 = np.zeros(M)
     e_1[0] = 1
     T = build_T_matrix(alp, beta)
@@ -93,14 +93,19 @@ def example_1():
     # Normalize s as in request
     s = s / LA.norm(s)
 
-    lanczos_err = np.zeros(M_MAX)
-    true_err = np.zeros(M_MAX)
+    j = 3
+    [V, alp, beta] = lanczos(L, s, M_MAX + j)
 
-    GLs = g(L) @ s
-    for M in range(1, M_MAX + 1):
-        g_M = compute_g_M(L, s, M)
-        j = 3
-        g_Mj = compute_g_M(L, s, M + j)
+    lanczos_err = np.zeros(M_MAX + j)
+    true_err = np.zeros(M_MAX + j)
+
+    G.compute_fourier_basis()
+    U = G.U
+    GLs = (U @ np.diag(g(G.e)) @ U.T) @ s
+    # GLs = g(L) @ s
+    for M in range(2, M_MAX + j):
+        g_M = compute_g_M(V[:, 0:M], alp[0:M], beta[0 : M - 1], s)
+        g_Mj = compute_g_M(V[:, 0 : M + j], alp[0 : M + j], beta[0 : M + j - 1], s)
 
         lanczos_err[M - 1] = LA.norm(g_Mj - g_M)
         true_err[M - 1] = LA.norm(GLs - g_M)
