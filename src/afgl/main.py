@@ -1,18 +1,13 @@
 import sys
 
-import scienceplots  # noqa: F401
-
-# Requires latex installed
-import afgl.example_1 as ex1
-import afgl.example_2 as ex2
+import afgl.test_2 as t_2
 from afgl.util.plot import plot_setup
 
 
 def run() -> None:
     plot_setup()
-    # example_1()
-    ex1.run()
-    ex2.run()
+    # t_1.run()
+    t_2.run()
 
 
 if __name__ == "__main__":

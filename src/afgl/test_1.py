@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import numpy.linalg as LA
-import scienceplots  # noqa: F401
-import scipy
 
 # Requires latex installed
+import scienceplots  # noqa: F401
+import scipy
 from pygsp import graphs
 
 from afgl.util.build_T_matrix import build_T_matrix

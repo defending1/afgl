@@ -1,25 +1,79 @@
-% !TeX program = pdflatex
-\documentclass{mathreport} % Uses our custom mathreport.cls
+\documentclass[11pt]{article}
+\usepackage[margin=1.2in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{fourier}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{latexsym}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{etoolbox}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{lipsum}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{mathtools}
+\usepackage{nccmath}
+\usepackage[most]{tcolorbox}
+\newtcolorbox[auto counter]{problem}[1][]{%
+    enhanced,
+    breakable,
+    colback=white,
+    colbacktitle=white,
+    coltitle=black,
+    fonttitle=\bfseries,
+    boxrule=.6pt,
+    titlerule=.2pt,
+    toptitle=3pt,
+    bottomtitle=3pt,
+    title=GitHub repository of this project}
 
-% Load bibliography
-\addbibresource{references.bib}
+\RequirePackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true]{microtype}
+\SetTracking{encoding={*}, shape=sc}{40} % Spacing for Small Caps
 
-% --- Document Metadata ---
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\C}{\mathbb{C}}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
 \title{%
     Accelerated filtering on graphs using Lanczos method
     \\ \large Relazione del progetto di Calcolo Scientifico}
 \author{Alberto Defendi}
-\date{\small\today}
+
+\date{}
+
+\setlength{\parskip}{1em}
+\setlength{\parindent}{0em}
 
 \begin{document}
-
 \maketitle
 
 \begin{abstract}
-    \noindent \small \textbf{\textit{Abstract.}}
+    \noindent The Lanczos algorithm \ldots 
 \end{abstract}
 
-\section{Introduction}
+{\setlength{\parskip}{0em}
+\tableofcontents}
+
+\section{Introduzione}
 
 Introduciamo alcuni concetti di teoria dei grafi e alcuni risultati del corso che verranno usati nel corso della sperimentazione.
 Scopo del progetto è verificare numericamente i risultati 
@@ -38,6 +92,11 @@ attraverso la valutazione $g(\mathcal{L})s$.
 test
 
 
-\printbibliography
+\clearpage
+\bibliographystyle{unsrt}
+\bibliography{ref}
+\nocite{*}
+
+
 
 \end{document}
