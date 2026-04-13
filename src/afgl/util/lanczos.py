@@ -31,9 +31,9 @@ def lanczos(L, s, M):
         w = L @ V[:, j]
         alp[j] = np.dot(V[:, j], w)
 
-        w = w - V[:, j] * alp[j]
+        w = w - alp[j] * V[:, j]
         if j > 0:
-            w = w - V[:, j - 1] * beta[j - 1]
+            w = w - beta[j - 1] * V[:, j - 1]
 
         if j < M - 1:
             beta[j] = LA.norm(w)
