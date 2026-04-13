@@ -31,14 +31,14 @@ def lanczos(L, s, M):
         w = L @ V[:, j]
         alp[j] = np.dot(V[:, j], w)
 
-        v_tilde = w - V[:, j] * alp[j]
+        w = w - V[:, j] * alp[j]
         if j > 0:
-            v_tilde = v_tilde - V[:, j - 1] * beta[j - 1]
+            w = w - V[:, j - 1] * beta[j - 1]
 
         if j < M - 1:
-            beta[j] = LA.norm(v_tilde)
+            beta[j] = LA.norm(w)
             if beta[j] == 0:
                 break
-            V[:, j + 1] = v_tilde / beta[j]
+            V[:, j + 1] = w / beta[j]
 
     return [V, alp, beta]
