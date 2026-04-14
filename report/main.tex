@@ -53,6 +53,7 @@
 
 \newcommand{\defeq}{\vcentcolon=}
 \newcommand{\eqdef}{=\vcentcolon}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -190,7 +191,22 @@ HERE PUT ALGORITHM
 
 
 
-\section{Esperimento 1}
+\section{Experiments}
+
+\subsection{}
+
+Consider the filter $ g : [0, \lambda_{\text{max}}] \to \R$ and a signal vector $ s \in \R^N $, by a
+a result of Gallopolus and Saad (see ?) it holds\footnote{This results holds outside the graph
+  signal processing context, that is for any function $f :\Omega \to \C$, where $ \Omega \subset \Lambda(A) $.} that
+\begin{equation}
+ g(\L)s \approx \norm{s}_2 V_M g(T_M) e_1 \eqdef g_M \label{eq:1}
+\end{equation}
+
+\begin{definition}(Errors)
+  We define the Lanczos iteration error as $\norm{g_{M+j} - g_M}_2 $, where $ j $ is small, and the true
+error as $ \norm{e_M} = \norm{g(\L)s - g_M} $.
+\end{definition}
+The scope of this experiment is verifying numerically equation \eqref{eq:1}
 
 Studiamo i grafi di Erdos-Reiny e di tipo Sensors. Dal plot possiamo 
 Figura (dida: Grafi di ER e sensor colorati in base al segnale (non filtrato, sopra) e filtrato
