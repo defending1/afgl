@@ -2,6 +2,20 @@ import numpy as np
 import numpy.linalg as LA
 
 
+def double_orthogonalization(V, w, j):
+    # Why it works well until j+1? it should be until j-1 from Demmel
+    for _ in range(2):
+        w -= V[:, : j + 1] @ (V[:, : j + 1].T @ w)
+    return w
+
+
+def no_orthogonalization(V, w, alp, beta, j):
+    w = w - alp[j] * V[:, j]
+    if j > 0:
+        w = w - beta[j - 1] * V[:, j - 1]
+    return w
+
+
 def lanczos(L, s, M):
     """
     Classic Lanczos method (without re-orthogonalization)
@@ -30,9 +44,7 @@ def lanczos(L, s, M):
         w = L @ V[:, j]
         alp[j] = np.dot(V[:, j], w)
 
-        w = w - alp[j] * V[:, j]
-        if j > 0:
-            w = w - beta[j - 1] * V[:, j - 1]
+        w = no_orthogonalization(V, w, alp, beta, j)
 
         if j < M - 1:
             beta[j] = LA.norm(w)

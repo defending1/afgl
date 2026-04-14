@@ -1,13 +1,13 @@
 import sys
 
-import afgl.test_2 as t_2
+import afgl.ex_1 as ex_1
 from afgl.util.plot import plot_setup
 
 
 def run() -> None:
     plot_setup()
-    # t_1.run()
-    t_2.run()
+    ex_1.run()
+    # t_2.run()
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ from afgl.util.plot import latex_log_formatter
 
 
 def plot_graphs(G_ER, G_Sensor, s: np.ndarray, N: int, p: float) -> None:
+    """Visualization of signal being filtered of two different types of graphs."""
     fig, axs = plt.subplots(2, 2, figsize=(6.6, 5))
 
     # Set coordinates
@@ -52,7 +53,7 @@ def plot_graphs(G_ER, G_Sensor, s: np.ndarray, N: int, p: float) -> None:
 
 
 def g_extended(t: np.ndarray) -> np.ndarray:
-    return np.sin(0.5 * np.pi * np.cos(np.pi * t) ** 2)
+    return np.sin(1 / 2 * np.pi * (np.cos(np.pi * t) ** 2))
 
 
 """
@@ -70,19 +71,21 @@ def g(T: np.ndarray) -> np.ndarray:
     return np.where(Chi, g_extended(T), 0)
 
 
-"""
-Computes the approximation g_M (see [1]) using Lanczos
-"""
-
-
 def compute_g_M(
     V: np.ndarray, alp: np.ndarray, beta: np.ndarray, s: np.ndarray
 ) -> np.ndarray:
+    """
+    Computes the approximation g_M (see [1]) using Lanczos
+    """
     M = len(alp)
     e_1 = np.zeros(M)
     e_1[0] = 1
     T = build_T_matrix(alp, beta)
-    y = LA.norm(s) * (g(T) @ e_1)
+
+    eigvals, eigvecs = LA.eigh(T)
+    g_T = eigvecs @ np.diag(g(eigvals)) @ eigvecs.T
+
+    y = LA.norm(s) * (g_T @ e_1)
     return V @ y
 
 
@@ -139,14 +142,14 @@ def run_comparison_1_for_graph(
     j = 3
     V, alp, beta = lanczos(L, s, M_MAX + j)
 
-    lanczos_err = np.zeros(M_MAX + j)
-    true_err = np.zeros(M_MAX + j)
+    lanczos_err = np.zeros(M_MAX)
+    true_err = np.zeros(M_MAX)
 
     GLs = filter_signal_with_fourier(G, s)
 
-    for M in range(2, M_MAX + j):
-        g_M = compute_g_M(V[:, 0:M], alp[0:M], beta[0 : M - 1], s)
-        g_Mj = compute_g_M(V[:, 0 : M + j], alp[0 : M + j], beta[0 : M + j - 1], s)
+    for M in range(1, M_MAX + 1):
+        g_M = compute_g_M(V[:, :M], alp[:M], beta[: M - 1], s)
+        g_Mj = compute_g_M(V[:, : M + j], alp[: M + j], beta[: M + j - 1], s)
 
         lanczos_err[M - 1] = LA.norm(g_Mj - g_M)
         true_err[M - 1] = LA.norm(GLs - g_M)
@@ -157,10 +160,10 @@ def run_comparison_1_for_graph(
 def run() -> None:
     """Ripete il test corrispondente ad Example 1 dell'articolo limitandosi al
     metodo di Lanczos (no Chebyshev) e utilizzando come funzione g(t) = sin(0.5π
-    cos(πt)2) * \chi_{[-0.5, 0.5]}.
+    cos(πt)2) * chi_{[-0.5, 0.5]}.
     """
     N = 500
-    M_MAX = 200
+    M = 200
     p = 0.04
 
     s = np.random.randint(1, 10000, N).astype(float)
@@ -170,8 +173,8 @@ def run() -> None:
     G_ER = graphs.ErdosRenyi(N, p)
     G_S = graphs.Sensor(N)
 
-    l_err_ER, t_err_ER = run_comparison_1_for_graph(G_ER, s, M_MAX)
-    l_err_S, t_err_S = run_comparison_1_for_graph(G_S, s, M_MAX)
+    l_err_ER, t_err_ER = run_comparison_1_for_graph(G_ER, s, M)
+    l_err_S, t_err_S = run_comparison_1_for_graph(G_S, s, M)
 
     plot_error_comparison(l_err_ER, t_err_ER, l_err_S, t_err_S)
-    plot_graphs(G_ER, G_S, s, N, p)
+    # plot_graphs(G_ER, G_S, s, N, p)
