@@ -8,17 +8,21 @@
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{amsfonts}
+\usepackage{mathtools}
 \usepackage{latexsym}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{etoolbox}
 \usepackage{hyperref}
 \usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18} 
 \usepackage{lipsum}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{mathtools}
 \usepackage{nccmath}
+\usepackage{eucal}
 \usepackage[most]{tcolorbox}
 \newtcolorbox[auto counter]{problem}[1][]{%
     enhanced,
@@ -42,6 +46,13 @@
 \newcommand{\Z}{\mathbb{Z}}
 \newcommand{\Q}{\mathbb{Q}}
 \newcommand{\C}{\mathbb{C}}
+\newcommand{\V}{\mathcal{V}}
+\newcommand{\E}{\mathcal{E}}
+\newcommand{\G}{\mathcal{G}}
+\renewcommand{\L}{\mathcal{L}}
+
+\newcommand{\defeq}{\vcentcolon=}
+\newcommand{\eqdef}{=\vcentcolon}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -54,8 +65,8 @@
 \newtheorem{remark}[theorem]{Remark}
 
 \title{%
-    Accelerated filtering on graphs using Lanczos method
-    \\ \large Relazione del progetto di Calcolo Scientifico}
+    Accelerated Filtering on Graphs using Lanczos method
+    \\ \large Scientific Computing project report}
 \author{Alberto Defendi}
 
 \date{}
@@ -73,23 +84,154 @@
 {\setlength{\parskip}{0em}
 \tableofcontents}
 
-\section{Introduzione}
+\section{Introduction}
 
-Introduciamo alcuni concetti di teoria dei grafi e alcuni risultati del corso che verranno usati nel corso della sperimentazione.
-Scopo del progetto è verificare numericamente i risultati 
+We introduce basic graph theory concepts and briefly overview the results used in the project experiments.
 
-Nell'analisi consideriamo i grafi di Erdo''s-Reiny (Figura)
+\subsection{Signal processing on graphs}
 
-Consideriamo un grafo non diretto e pesato $ G = (V, E, W)$.
+We consider a weighted undirected graph $ \G = (\V, \E, \mathcal{W}) $,
+where $ \V \subset \R^N $ is the set of vertices, $ \E \subset \R^M $ is the set of edges, and $ \mathcal{W}
+: \V \times \mathcal{V} \to \R$ is a weight function. The weight function can be
+represented with a $ N \times N $ matrix $ W $ such that 
+$W_{i,j} = 
+\begin{cases} 
+    W(v_i, v_j), & \text{if } (v_i, v_j) \in \E \\ 
+    0, & \text{otherwise} 
+\end{cases} 
+\quad \text{for all } i,j = 1, \dots, |\V|
+$,
+and for our needs, we assume $ W $ to be symmetric, that is $ W_{i,j} =  W_{j,i} $.
+
+In the study of signal processing on graph, we model the idea of sending a signal to a node as
+assigning a value to a vertex with a function $ s : \V \to \R$, whose values can be represented as a vector
+$ s = s(\V) = [s_1, \dots, s_N] \in \R^N $ where each entry $ s_i \defeq s(v_i)$ represents
+the signal sent over a node $ v_i \in \V$. We also keep track of the weight of each vertex
+with a function $ d(i) \defeq \sum_{j=1}^N W_{i,j} $, that we represent with the matrix $D =
+\text{diag}(d(1), \dots, d(N))$.
+
+In this setting, we introduce the graph Laplacian $\L$ defined as 
+$ \L = D - W$, where $D $ is the diagonal degree matrix with entries  $D_{ii} = d(i)$. By
+construction, $\L^T = \mathcal{L}$, thus the Lanczos method can be safely applied to our 
+problem.
+
+\begin{remark}
+  The Laplacian $\L$ is symmetric and semi-definite (it is diagonally dominant), hence by the
+  spectral theorem it admits the decomposition
+  \begin{equation*}
+    \L = U \Lambda U^{*},
+  \end{equation*}
+  where $ U = \left[ u_0,\dots,u_{N-1} \right] \in O(N)$ is called Fourier basis, and $ \Lambda =
+  \text{diag}\left(\lambda_0, \dots, \lambda_{N-1}\right)$ is the matrix of eigenvalues of $ \L $,
+  without loss of generality we can assume $ 0 =\lambda_0 \leq \lambda_1  \dots \leq \lambda_{N-1} $
+  and the vectors in $ U $ to be in the same order that the eigenvalues.
+  \footnote{this assumption is aligned with the PyGSP $ \text{compute\_fourier\_basis()} $ function
+  implementation, used in this work to compute the matrix $ \Lambda $. Clarifying this assumption is
+outside our scope.}.
+\end{remark}
+
+\begin{definition}[Graph signal]
+  A graph signal is a continuous function $ g : \R^+ \to \R $.
+\end{definition}
+Diagonalising the Laplacian would give an easy way to compute the function $ g(\L) $ by
+evaluating it on the eigenvalues of $ \L $, which means computing $ g(\L) = U g(\Lambda) U^{*} $.
+In matrix notation, applying a filter to a graph $ \G $ corresponds to the operation
+\begin{equation*}
+  s^\prime \defeq g(\L)s = U g(\L) U^{*}s.
+\end{equation*}
+\begin{remark}[Computational cost]
+Computing the Fourier basis for $ \L $ is computationally expensive for large graphs, thus the
+choice of using the Lanczos method for $ g(\L) $, with its computational cost of $ O(M \dot |\E|) $,
+it offers an efficient alternative in computing $ g(\L) $. However, storing the basis $ V_M $ costs MN
+additional memory, that could be avoided using a two-step implementation, that we leave for future
+work.
+\end{remark}
+
+\subsection{The Lanczos method}
+
+\begin{definition}
+ Given a matrix $ A \in \R^{N \times N} $ and a vector $ b \in R^N $, the Krylov subspace of order $j$ is defined as the set $ \mathcal{K}_j (A,b) = \{ b, Ab, A^2b, \dots,
+A^{j-1}b\}  $. We represent the basis of this subspace in a matrix $ V_M = \left[ v_1,\dots,v_M
+\right] \in \R^{N \times M}$.
+\end{definition}
+We now consider the Arnoldi relation
+\begin{equation*}
+  AV_j = V_jH_j + h_{j+1,j}v_{j+1}e_j^{*}, \\ \hspace{20pt}
+  H_j = V_j^{*}AV_j =
+  \begin{bmatrix}
+    h_{11} & \dots & \dots & h_{1,j} \\
+    h_{21} & h_{22} & & \vdots \\
+           & \ddots & \ddots & \vdots \\
+           & & h_{j,j-1} & h_{j,j}.
+  \end{bmatrix}
+\end{equation*}
+Letting
+\begin{equation*}
+\alpha_j \defeq h_{j,j},\hspace{20pt}\beta_j \defeq h_{j-1,j},
+\end{equation*}
+if $ A $ is symmetric and positive defined, then so is $ H_j $. Because  $ H_j $ is both symmetric
+and upper and lower Hessenberg matrix, then it is tridiagonal, and we refer to it as $ T_j $, hence
+the Arnoldi relation takes the form:
+
+\begin{equation*}
+  AV_j = V_j \alpha_j  + \beta_j v_{j+1}e_j^{T}, \\ \hspace{20pt}
+  T_j = V_j^{\top} A V_j = \begin{bmatrix}
+    \alpha_1 & \beta_1 \\
+    \beta_1 & \ddots & \ddots \\
+      & \ddots & \ddots & \beta_{j-1} \\
+      & & \beta_{j-1} & \alpha_j
+  \end{bmatrix}.
+\end{equation*}.
+
+HERE PUT ALGORITHM
+
+
+
+
 
 
 \section{Esperimento 1}
 
 Studiamo i grafi di Erdos-Reiny e di tipo Sensors. Dal plot possiamo 
-
 Figura (dida: Grafi di ER e sensor colorati in base al segnale (non filtrato, sopra) e filtrato
-attraverso la valutazione $g(\mathcal{L})s$.
+attraverso la valutazione $g(\L)s$.
 test
+
+\begin{tikzpicture}
+\begin{axis}[
+    % Size parameters suitable for standard 2-column IEEE/Springer papers
+    width=8cm,          
+    height=5.5cm,         
+    axis lines=middle,  
+    xlabel={$t$},
+    ylabel={$f(t)$},
+    xmin=-1.2, xmax=1.2,
+    ymin=-0.2, ymax=1.2,
+    % Clean fractional ticks
+    xtick={-1, -0.5, 0, 0.5, 1},
+    xticklabels={$-1$, $-\frac{1}{2}$, $0$, $\frac{1}{2}$, $1$},
+    ytick={0, 1},
+    ticklabel style={font=\footnotesize},
+    xlabel style={anchor=west},
+    ylabel style={anchor=south},
+    enlargelimits=false,
+    % Define the function natively. 
+    % Note: pgfplots evaluates trig functions in degrees by default.
+    % 1/2 pi rad = 90 deg; pi*t rad = 180*t deg.
+    declare function={
+        f(\t) = (abs(\t) <= 0.5) * sin(90 * (cos(180*\t))^2);
+    }
+]
+
+\addplot [
+    domain=-1.2:1.2,
+    samples=300,        % High sample count for smooth paper-quality rendering
+    thick,
+    blue!80!black       % Professional dark blue (prints better than pure blue)
+] {f(x)};
+
+\end{axis}
+\end{tikzpicture}
 
 
 \clearpage
