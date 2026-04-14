@@ -1,26 +1,25 @@
 import numpy as np
 import numpy.linalg as LA
 
-"""
-Classic Lanczos method (without re-orthogonalization)
-
-Arguments
-L : Real valued NxN symmetric matrix
-s : vector of size N
-M : natural number indicating basis size
-
-Returns
--------
-V : ndarray
-    M-dimensional vector with orthonormal columns.
-alp : ndarray
-    M-dimensional array of scalars.
-beta : ndarray
-    M-dimensional array of scalars.
-"""
-
 
 def lanczos(L, s, M):
+    """
+    Classic Lanczos method (without re-orthogonalization)
+
+    Arguments
+    L : Real valued NxN symmetric matrix
+    s : vector of size N
+    M : natural number indicating basis size
+
+    Returns
+    -------
+    V : ndarray
+        M-dimensional vector with orthonormal columns.
+    alp : ndarray
+        M-dimensional array of scalars.
+    beta : ndarray
+        M-dimensional array of scalars.
+    """
     N = len(s)
     alp = np.zeros(M)
     beta = np.zeros(M - 1)
@@ -37,8 +36,9 @@ def lanczos(L, s, M):
 
         if j < M - 1:
             beta[j] = LA.norm(w)
-            if beta[j] == 0:
-                break
+            if beta[j] < 1e-14:
+                print("BREAKDOWN")
+                return V[:, : j + 1], alp[: j + 1], beta[:j]
             V[:, j + 1] = w / beta[j]
 
-    return [V, alp, beta]
+    return V, alp, beta
