@@ -4,9 +4,9 @@ from afgl.util.build_T_matrix import build_T_matrix
 
 
 def full_orthogonalization(V, w, j):
-    # Why it works well until j+1? it should be until j-1 from Demmel
     for _ in range(2):
-        w -= V[:, : j + 1] @ (V[:, : j + 1].T @ w)
+        w = w - V[:, : j + 1] @ (V[:, : j + 1].T @ w)
+
     return w
 
 
@@ -18,6 +18,7 @@ def no_orthogonalization(V, w, alp, beta, j):
 
 
 def FOM_reminder(alp, beta, j, s):
+    """Computes r_j^{(FOM)} = |b_j||y_j^T e_j|"""
     e_1 = np.zeros(j)
     e_1[0] = 1
 
@@ -27,24 +28,7 @@ def FOM_reminder(alp, beta, j, s):
     return abs(beta[j - 1]) * abs(y_j[-1])
 
 
-def lanczos_iteration(L, s, M: int, full_ortho: bool, threshold: float, FOM):
-    """
-    Classic Lanczos method (without re-orthogonalization)
-
-    Arguments
-    L : Real valued NxN symmetric matrix
-    s : vector of size N
-    M : natural number indicating basis size
-
-    Returns
-    -------
-    V : ndarray
-        M-dimensional vector with orthonormal columns.
-    alp : ndarray
-        M-dimensional array of scalars.
-    beta : ndarray
-        M-dimensional array of scalars.
-    """
+def lanczos_iteration(L, s, M, full_ortho, eps_FOM=None):
     N = len(s)
     alp = np.zeros(M)
     beta = np.zeros(M - 1)
@@ -69,30 +53,50 @@ def lanczos_iteration(L, s, M: int, full_ortho: bool, threshold: float, FOM):
                 early_stop = f"$\\beta[{j}]=0$"
                 return V[:, : j + 1], alp[: j + 1], beta[:j], early_stop
             else:
-                r_j_norm = -1
-                if j > 2 and FOM:
-                    r_j_norm = FOM_reminder(alp, beta, j + 1, s)
-                if r_j_norm < threshold and r_j_norm > 0 and FOM:
-                    early_stop = (
-                        f"$r_j^{{(FOM)}}  < \\varepsilon \\text{{ at step j}} = {j}$"
-                    )
-                    return V[:, : j + 1], alp[: j + 1], beta[:j], early_stop
-                else:
-                    V[:, j + 1] = w / beta[j]
+                if j > 2 and eps_FOM is not None:
+                    r_j_FOM_norm2 = FOM_reminder(alp, beta, j + 1, s)
+                    if r_j_FOM_norm2 < eps_FOM:
+                        early_stop = (
+                            f"$r_j^{{(FOM)}}  < \\varepsilon \n"
+                            f"\\text{{ at iteration }} = {j+1}$"
+                        )
+                        return V[:, : j + 1], alp[: j + 1], beta[:j], early_stop
+
+                V[:, j + 1] = w / beta[j]
 
     return V, alp, beta, early_stop
 
 
-def lanczos(L, s, M, threshold=10e-15, FOM=False):
+def lanczos(L, s, M, eps_FOM=None):
+    """
+    Lanczos extended method that calls re-orthogonalization when || V^T*V - I||
+    < EPS_ORTHO.
+
+    Arguments
+    L : Real valued NxN symmetric matrix
+    s : vector of size N
+    M : natural number indicating basis size
+    eps_FOM: When passed float value, Lanczos method stops using FOM method,
+    that is when r_j_FOM_norm2 < eps_FOM.
+
+    Returns
+    -------
+    V : ndarray
+        M-dimensional vector with orthonormal columns.
+    alp : ndarray
+        M-dimensional array of scalars.
+    beta : ndarray
+        M-dimensional array of scalars.
+    """
     full_ortho = False
 
-    ORTHO_EPS = 10e-2
-    V, alp, beta, early_stop = lanczos_iteration(L, s, M, False, threshold, FOM)
+    EPS_ORTHO = 10e-2
+    V, alp, beta, early_stop = lanczos_iteration(L, s, M, False, eps_FOM)
 
     # Check basis orthogonality
     Id = np.eye(len(alp))
-    if LA.norm(V.T @ V - Id) > ORTHO_EPS:
-        V, alp, beta, early_stop = lanczos_iteration(L, s, M, True, threshold, FOM)
+    if LA.norm(V.T @ V - Id) > EPS_ORTHO:
+        V, alp, beta, early_stop = lanczos_iteration(L, s, M, True, eps_FOM)
         full_ortho = True
 
-    return V, alp, beta, full_ortho, early_stop
+    return V, alp, beta, [full_ortho, early_stop]

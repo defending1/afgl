@@ -100,24 +100,21 @@ def plot_error_comparison(
 ) -> None:
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.6, 2.5))
 
-    # Left plot (Erdos-Renyi)
-    ax1.plot(l_err_ER, label=r"$\left\lVert g_{M+3} - g_M \right\rVert_2$")
-    ax1.plot(t_err_ER, label=r"$\left\lVert e_M \right\rVert_2$")
-    ax1.set_title("Erdős-Rényi graph")
+    ax1.plot(l_err_S, label=r"$\left\lVert g_{M+3} - g_M \right\rVert_2$")
+    ax1.plot(t_err_S, label=r"$\left\lVert e_M \right\rVert_2$")
+    ax1.set_title("Sensor graph")
 
-    # Right plot (Sensor)
-    ax2.plot(l_err_S, label=r"$\left\lVert g_{M+3} - g_M \right\rVert_2$")
-    ax2.plot(t_err_S, label=r"$\left\lVert e_M \right\rVert_2$")
-    ax2.set_title("Sensor graph")
+    ax2.plot(l_err_ER, label=r"$\left\lVert g_{M+3} - g_M \right\rVert_2$")
+    ax2.plot(t_err_ER, label=r"$\left\lVert e_M \right\rVert_2$")
+    ax2.set_title("Erdős-Rényi graph")
 
-    # Apply identical formatting to both subplots
+    # Apply formatting to both subplots
     for ax in (ax1, ax2):
         ax.xaxis.set_major_locator(ticker.MultipleLocator(50))
         ax.set_yscale("log")
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(latex_log_formatter))
         ax.legend()
 
-    # Prevents overlapping of labels between the subplots
     plt.tight_layout()
 
     plt.savefig("./out/ex1_estimate.pdf", bbox_inches="tight")
@@ -142,7 +139,12 @@ def run_comparison_1_for_graph(
     L = G.L
 
     j = 3
-    V, alp, beta, _, _ = lanczos(L, s, M_MAX + j)
+    (
+        V,
+        alp,
+        beta,
+        _,
+    ) = lanczos(L, s, M_MAX + j)
 
     lanczos_err = np.zeros(M_MAX)
     true_err = np.zeros(M_MAX)
