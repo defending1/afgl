@@ -39,7 +39,7 @@ def run() -> None:
 
         start = time.perf_counter()
         eps = 10e-4
-        V, alp, beta, full_ortho, early_stop = lanczos(L, s, M, eps)
+        V, alp, beta, full_ortho, early_stop = lanczos(L, s, M, eps, FOM=True)
         end = time.perf_counter()
 
         results.append(

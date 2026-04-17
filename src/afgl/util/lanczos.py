@@ -27,7 +27,7 @@ def FOM_reminder(alp, beta, j, s):
     return abs(beta[j - 1]) * abs(y_j[-1])
 
 
-def lanczos_iteration(L, s, M: int, full_ortho: bool, threshold: float):
+def lanczos_iteration(L, s, M: int, full_ortho: bool, threshold: float, FOM):
     """
     Classic Lanczos method (without re-orthogonalization)
 
@@ -70,9 +70,9 @@ def lanczos_iteration(L, s, M: int, full_ortho: bool, threshold: float):
                 return V[:, : j + 1], alp[: j + 1], beta[:j], early_stop
             else:
                 r_j_norm = -1
-                if j > 2:
+                if j > 2 and FOM:
                     r_j_norm = FOM_reminder(alp, beta, j + 1, s)
-                if r_j_norm < threshold and r_j_norm > 0:
+                if r_j_norm < threshold and r_j_norm > 0 and FOM:
                     early_stop = (
                         f"$r_j^{{(FOM)}}  < \\varepsilon \\text{{ at step j}} = {j}$"
                     )
@@ -83,16 +83,16 @@ def lanczos_iteration(L, s, M: int, full_ortho: bool, threshold: float):
     return V, alp, beta, early_stop
 
 
-def lanczos(L, s, M, threshold=10e-33):
+def lanczos(L, s, M, threshold=10e-15, FOM=False):
     full_ortho = False
 
     ORTHO_EPS = 10e-2
-    V, alp, beta, early_stop = lanczos_iteration(L, s, M, False, threshold)
+    V, alp, beta, early_stop = lanczos_iteration(L, s, M, False, threshold, FOM)
 
     # Check basis orthogonality
     Id = np.eye(len(alp))
     if LA.norm(V.T @ V - Id) > ORTHO_EPS:
-        V, alp, beta, early_stop = lanczos_iteration(L, s, M, True, threshold)
+        V, alp, beta, early_stop = lanczos_iteration(L, s, M, True, threshold, FOM)
         full_ortho = True
 
     return V, alp, beta, full_ortho, early_stop

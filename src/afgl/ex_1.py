@@ -137,10 +137,12 @@ def run_comparison_1_for_graph(
         as defined in [1]
     """
     G.compute_laplacian("combinatorial")
+    G.estimate_lmax()
+    G.L /= G.lmax
     L = G.L
 
     j = 3
-    V, alp, beta = lanczos(L, s, M_MAX + j)
+    V, alp, beta, _, _ = lanczos(L, s, M_MAX + j)
 
     lanczos_err = np.zeros(M_MAX)
     true_err = np.zeros(M_MAX)
