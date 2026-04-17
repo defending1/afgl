@@ -31,12 +31,12 @@ def test_lanczos_return_correct_solution_with_dense():
     L = Q @ np.diag(eigvals) @ Q.T
 
     s = np.random.randint(1, 10, N)
-    [V, alp, beta] = lanczos(L, s, M)
+    V, alp, beta, _, _ = lanczos(L, s, M)
 
     T = build_T_matrix(alp, beta)
 
     x = LA.solve(L, s)
-    e_1 = np.zeros(M)
+    e_1 = np.zeros(len(alp))
     e_1[0] = 1
     y = (LA.inv(T) @ e_1) * LA.norm(s)
     x_lanczos = V @ y
@@ -63,7 +63,7 @@ def test_function_g_with_graph_laplacian():
         for G in GRAPHS:
             G.compute_laplacian()
             L = G.L
-            V, alp, beta = lanczos(L, s, M + j)
+            V, alp, beta, _, _ = lanczos(L, s, M + j)
 
             GLs = filter_signal_with_fourier(G, s)
 
