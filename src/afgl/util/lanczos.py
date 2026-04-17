@@ -53,7 +53,7 @@ def lanczos_iteration(L, s, M, full_ortho, eps_FOM=None):
                 early_stop = f"$\\beta[{j}]=0$"
                 return V[:, : j + 1], alp[: j + 1], beta[:j], early_stop
             else:
-                if j > 2 and eps_FOM is not None:
+                if eps_FOM is not None:
                     r_j_FOM_norm2 = FOM_reminder(alp, beta, j + 1, s)
                     if r_j_FOM_norm2 < eps_FOM:
                         early_stop = (
