@@ -15,6 +15,7 @@
 \usepackage{etoolbox}
 \usepackage{hyperref}
 \usepackage{tikz}
+\usepackage{booktabs}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18} 
 \usepackage{lipsum}
@@ -152,7 +153,7 @@ work.
 
 \begin{definition}
  Given a matrix $ A \in \R^{N \times N} $ and a vector $ b \in R^N $, the Krylov subspace of order $j$ is defined as the set $ \mathcal{K}_j (A,b) = \{ b, Ab, A^2b, \dots,
-A^{j-1}b\}  $. We represent the basis of this subspace in a matrix $ V_M = \left[ v_1,\dots,v_M
+A^{j-1}b\}  $. We represent the basis of this subspace with a matrix $ V_M = \left[ v_1,\dots,v_M
 \right] \in \R^{N \times M}$.
 \end{definition}
 We now consider the Arnoldi relation
@@ -248,6 +249,10 @@ test
 
 \end{axis}
 \end{tikzpicture}
+
+\begin{center}
+\input{assets/table_ex_2.tex}
+\end{center}
 
 
 \clearpage
