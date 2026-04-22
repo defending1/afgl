@@ -149,6 +149,28 @@ additional memory, that could be avoided using a two-step implementation, that w
 work.
 \end{remark}
 
+In this work, we will restrict ourself to two graph models: Erdős-Rényi and Sensor graphs. We shall
+define them as the current implementation in PyGSP:
+\begin{definition}[Erdős-Rényi graph]
+  We define Erdős-Rényi graph $ \G_{N,p} $, where $ N $ is the number of nodes, and $ p $ the
+  probability of connecting a node with another one, as the graph constructed by randomly connecting
+  nodes, where each edge included in the graph with probability $ p $, independently from any other edge.
+\end{definition}
+\begin{definition}[Sensor graph]
+  A sensor graph $ \G_N $ is the graph constructed by picking $ N $ points on the square $ \left[
+  0,1 \right] \times \left[ 0,1 \right] $ and connecting each point with edges using $ k $ nearest
+  neighbors.
+\end{definition}
+\begin{remark}
+  As currently stating in \href{https://github.com/epfl-lts2/pygsp/blob/4716b12c470c579e3f477f2d1c1d99752c73252d/pygsp/graphs/nngraphs/sensor.py#L6}{PyGSP
+    sensor graph source code}, definition of this graph changed in 2019, thus our used sensor graph
+    might give slightly different results than the 2015's article \cite{susnjara2015} we are trying
+    to reproduce. We don't investigate this difference as it is unclear how the new library improves
+    the old one.
+  
+\end{remark}
+
+
 \subsection{The Lanczos method}
 
 \begin{definition}
@@ -156,7 +178,7 @@ work.
 A^{j-1}b\}  $. We represent the basis of this subspace with a matrix $ V_M = \left[ v_1,\dots,v_M
 \right] \in \R^{N \times M}$.
 \end{definition}
-We now consider the Arnoldi relation
+We begin considering the Arnoldi relation
 \begin{equation*}
   AV_j = V_jH_j + h_{j+1,j}v_{j+1}e_j^{*}, \\ \hspace{20pt}
   H_j = V_j^{*}AV_j =
@@ -165,14 +187,14 @@ We now consider the Arnoldi relation
     h_{21} & h_{22} & & \vdots \\
            & \ddots & \ddots & \vdots \\
            & & h_{j,j-1} & h_{j,j}.
-  \end{bmatrix}
+  \end{bmatrix},
 \end{equation*}
-Letting
+and we derive the Lanczos method for a symmetric, positively defined matrix $ A $ letting
 \begin{equation*}
-\alpha_j \defeq h_{j,j},\hspace{20pt}\beta_j \defeq h_{j-1,j},
+\alpha_j \defeq h_{j,j},\hspace{20pt}\beta_j \defeq h_{j+1,j}.
 \end{equation*}
-if $ A $ is symmetric and positive defined, then so is $ H_j $. Because  $ H_j $ is both symmetric
-and upper and lower Hessenberg matrix, then it is tridiagonal, and we refer to it as $ T_j $, hence
+From this hypothesis on $ A $, it follows that the matrix $ H_j $, which is both upper and lower Hessenberg 
+matrix, is also symmetric, hence it is tridiagonal—from now we will refer to it as $ T_j $—hence
 the Arnoldi relation takes the form:
 
 \begin{equation*}
@@ -185,8 +207,60 @@ the Arnoldi relation takes the form:
   \end{bmatrix}.
 \end{equation*}.
 
-HERE PUT ALGORITHM
+\subsection{Algorithm}
+We implement the following Lanczos method implementation Algorithm \ref{alg:lanczos}, following \cite{susnjara2015} and
+\cite{demmel1997} with the following criterias: full reorthogonalization is triggered if loss of
+orthogonality is detected after calling Lanczos without orthogonalization, that is when $ \|V_M^{\top} V_M
+- I \|_2 > \varepsilon $ for a chosen $ \varepsilon = 10^{-2} $. When the algorithm is called
+passing a given threshold $ \varepsilon_{\text{FOM}} $, it computes the residual $
+\|r_j^{\text{FOM}} \|_2  \mid \beta_j  \mid  \mid e_j^{\top}y_j^{\text{FOM}}$ solving the linear
+system $ T_jy_j^{\text{FOM}} = \|b\|_2 e_1 $ numerically calling Numpy's function \texttt{solve($ T_j $,$\|b\|_2$)}.
 
+\begin{algorithm}[ht!]
+  \caption{Lanczos method in floating point arithmetic with FOM check.}
+  \label{alg:lanczos}
+  \begin{algorithmic}
+    \State \textbf{Input:} Symmetric matrix $ A \in \R^{N\times N}$, vector $ b \in R^N $, $ M \in
+    \N $.
+    \State \textbf{Output: } Basis matrix $ V_l = \left[ v_1,\dots,v_l \right] \in R^{N \times l} $ for $ K_l(A,b) $, vectors $
+    \alpha =\left\{ \alpha_1,\dots,\alpha_l \right\} \in \R^l, \beta=\left[ \beta_1,\dots,\beta_{l-1} \right] \in \R^{l-1} $, where $ l \in
+    \{ 1,\dots,M \}$ is the stopping iteration index.
+
+
+    \For{$ j = 1, \dots, M-1 $}
+    \State $ w \leftarrow Av_j  $
+    \State $ \alpha_j \leftarrow v_j^{\top} w $
+
+    \State $\left\{
+    \begin{array}{ll}
+        w \leftarrow w - \alpha_j &  \text{No reorthogonalization} \\
+        \text{\textbf{if} } j>0 \text{ \textbf{then} } w \leftarrow w - \beta_j \text{ \textbf{end
+    if}} & \\ \\
+        w = w - v_j(v_j^{\top}w) & \text{Full reorthogonalization} \\
+        w = w - v_j(v_j^{\top}w) 
+    \end{array}
+    \right.$
+    \If{$ j < M $}
+    \State $ \beta_j = \|w\|_2 $
+    \If{$ \beta_j = 0 $}
+      \State 
+      \Return $ V_j(:,1:j), \alpha_j(1:j), \beta_j(1:j-1) $
+      \Comment{--- Breakdown ---}
+    \Else
+      \If{$ \|r_j^{\text{FOM}}\|_2 =  \mid b_j\mid  \mid e_j^{\top}y_j^{\text{FOM}} \mid <
+      \varepsilon_{\text{FOM}}$}
+      \State 
+      \Return $ V_j(:,1:j), \alpha_j(1:j), \beta_j(1:j-1) $
+      \Comment{--- FOM breakdown ---}
+      \EndIf
+      \State $ v_{j+1} = \frac{w}{\beta_j} $
+    \EndIf
+    \EndIf
+    \EndFor
+    \State \Return $ V_M, \alpha_M, \beta_M $.
+  \end{algorithmic}
+  
+\end{algorithm}
 
 
 
@@ -250,14 +324,27 @@ test
 \end{axis}
 \end{tikzpicture}
 
-\begin{center}
-\input{assets/table_ex_2.tex}
-\end{center}
+\subsection{}
 
 \begin{center}
-\input{assets/table_ex_3.tex}
+  \label{table:ex23}
+  \begin{table}
+  \caption{Lanczos execution tests when $ N $ varies and $ p $ fixed (top), and 
+  vice versa (bottom). In both cases $ \varepsilon $ stays the same.}
+  \input{assets/table_ex_2.tex}
+  \input{assets/table_ex_3.tex}
+  \end{table}
 \end{center}
 
+\begin{figure}
+  \caption{Log-log plot of four iteration of the results in Table \ref{table:ex23}} 
+  \includegraphics[width=0.6\textwidth]{assets/correlation_23.pdf}
+\end{figure}
+
+\section{Conclusions \& future work}
+
+Lanczos implementation could be improved by implementing selective reorthogonalization as described
+in \cite{demmel1997}, however such improvement falls behind the scope of this course.
 
 \clearpage
 \bibliographystyle{unsrt}
