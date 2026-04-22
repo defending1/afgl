@@ -5,6 +5,8 @@ from afgl.util.build_T_matrix import build_T_matrix
 
 def full_orthogonalization(V, w, j):
     for _ in range(2):
+        # Remember that numpy slicing is not inclusive, thus hereunder we are
+        # considering the submatrix V(:,0:j)
         w = w - V[:, : j + 1] @ (V[:, : j + 1].T @ w)
 
     return w
@@ -55,9 +57,9 @@ def lanczos_iteration(L, s, M, full_ortho, eps_FOM=None):
             else:
                 if eps_FOM is not None:
                     r_j_FOM_norm2 = FOM_reminder(alp, beta, j + 1, s)
-                    if r_j_FOM_norm2 < eps_FOM:
+                    if r_j_FOM_norm2 < eps_FOM * LA.norm(s):
                         early_stop = (
-                            f"$r_j^{{(FOM)}}  < \\varepsilon \n"
+                            f"$\\|r_j^{{FOM}}\\|_2  < \\varepsilon \\|s\\|_2 \n"
                             f"\\text{{ at iteration }} = {j+1}$"
                         )
                         return V[:, : j + 1], alp[: j + 1], beta[:j], early_stop
@@ -90,7 +92,7 @@ def lanczos(L, s, M, eps_FOM=None):
     """
     full_ortho = False
 
-    EPS_ORTHO = 10e-2
+    EPS_ORTHO = 10e-10
     V, alp, beta, early_stop = lanczos_iteration(L, s, M, False, eps_FOM)
 
     # Check basis orthogonality

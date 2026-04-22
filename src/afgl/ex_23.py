@@ -10,8 +10,9 @@ from afgl.util.lanczos import lanczos
 
 
 class Ex_23:
-    def __init__(self, n):
+    def __init__(self, n, times):
         self.n = n
+        self.times = times
         x = self.run_ex_2()
         y = self.run_ex_3()
         self.plot(x, y)
@@ -53,7 +54,7 @@ class Ex_23:
         )
 
     def to_latex(self, df, ex):
-        df.to_latex(f"./report/assets/table_ex_{ex}.tex", index=False)
+        df.to_latex(f"./out/table_ex_{ex}.tex", index=False)
 
     def run_ex_2(self):
         """Genera i grafi di di Erdos-Reny di grandezza crescente 250,
@@ -74,8 +75,9 @@ class Ex_23:
 
         results = []
 
-        for N in N_VALUES:
-            self.iteration(N, M, p, results)
+        for _ in range(self.times):
+            for N in N_VALUES:
+                self.iteration(N, M, p, results)
 
         df = pd.DataFrame(results)
         self.to_latex(df, 2)
@@ -99,8 +101,9 @@ class Ex_23:
 
         results = []
 
-        for p in p_values:
-            self.iteration(N, M, p, results)
+        for _ in range(self.times):
+            for p in p_values:
+                self.iteration(N, M, p, results)
 
         df = pd.DataFrame(results)
         self.to_latex(df, 3)
