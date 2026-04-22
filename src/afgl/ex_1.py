@@ -52,6 +52,18 @@ def plot_graphs(G_ER, G_Sensor, s: np.ndarray, N: int, p: float) -> None:
     plt.savefig("./out/printed_graphs.pdf", bbox_inches="tight")
 
 
+"""
+TODO: Fix this misbehaviour
+Steps tried: 
+- translating g to max eigenvalue (see gemini conversation)
+- Leaving g untouched (sure it's not ok) but normalizing L with L = L/lmax: it
+  gives smooth curve but it goes too low
+- Translating np.sin(1 / 2 * np.pi * (np.cos(np.pi * t - 1/2) ** 2)) and
+  normalizing L as above, it gives close errors but curves are not smooth.
+
+"""
+
+
 def g_extended(t: np.ndarray) -> np.ndarray:
     return np.sin(1 / 2 * np.pi * (np.cos(np.pi * t) ** 2))
 

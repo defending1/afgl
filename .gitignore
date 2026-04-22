@@ -42,4 +42,5 @@ fls
 Thumbs.db
 .idea/
 .vscode/
-*.swp
+	*.swp
+main.synctex(busy)
