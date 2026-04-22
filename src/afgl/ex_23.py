@@ -1,6 +1,5 @@
 import time
 
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as LA
 import pandas as pd
@@ -13,19 +12,13 @@ class Ex_23:
     def __init__(self, n, times):
         self.n = n
         self.times = times
-        x = self.run_ex_2()
-        y = self.run_ex_3()
-        self.plot(x, y)
-
-    def plot(self, x, y):
-        plt.figure(figsize=(8, 6))
-        plt.loglog(x, y, "o", color="blue", label="Raw Data")
-        plt.xlabel("Duration [s] ($N$ varies)")
-        plt.ylabel("Duration [s] ($p$ varies)")
-        plt.title("Performance correlation between $N$ and $p$.")
-
-        plt.grid(True, which="both", linestyle="--", alpha=0.5)
-        plt.savefig("./out/correlation_23.pdf", bbox_inches="tight")
+        x = self.to_df(self.run_ex_2(), "ex 2")
+        y = self.to_df(self.run_ex_3(), "ex 3")
+        df = pd.concat([x, y], axis=1)
+        print(df)
+        df.attrs["n"] = n
+        df.attrs["times"] = times
+        df.to_pickle("./out/ex_23.pkl")
 
     def iteration(self, N, M, p, results):
         s = np.random.randint(1, 10000, N).astype(float)
@@ -79,9 +72,13 @@ class Ex_23:
             for N in N_VALUES:
                 self.iteration(N, M, p, results)
 
+        return results
+
+    def to_df(self, results, name, to_latex=False):
         df = pd.DataFrame(results)
-        self.to_latex(df, 2)
-        return df["Duration (s)"]
+        self.to_latex(df, 3)
+        df.rename(columns={"Duration (s)": "Duration (s) " + name}, inplace=True)
+        return df["Duration (s) " + name]
 
     def run_ex_3(self):
         """Genera i grafi di di Erdos-Reny di grandezza fissata n=1000 e testa p =
@@ -105,6 +102,4 @@ class Ex_23:
             for p in p_values:
                 self.iteration(N, M, p, results)
 
-        df = pd.DataFrame(results)
-        self.to_latex(df, 3)
-        return df["Duration (s)"]
+        return results
