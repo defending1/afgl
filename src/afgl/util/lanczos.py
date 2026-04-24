@@ -12,7 +12,7 @@ def full_orthogonalization(V, w, j):
     return w
 
 
-def no_orthogonalization(V, w, alp, beta, j):
+def classic_orthogonalization(V, w, alp, beta, j):
     w = w - alp[j] * V[:, j]
     if j > 0:
         w = w - beta[j - 1] * V[:, j - 1]
@@ -46,7 +46,7 @@ def lanczos_iteration(L, s, M, full_ortho, eps_FOM=None):
         if full_ortho:
             w = full_orthogonalization(V, w, j)
         else:
-            w = no_orthogonalization(V, w, alp, beta, j)
+            w = classic_orthogonalization(V, w, alp, beta, j)
 
         if j < M - 1:
             beta[j] = LA.norm(w)
