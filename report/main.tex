@@ -194,7 +194,7 @@ and we derive the Lanczos method for a symmetric, positively defined matrix $ A 
 \alpha_j \defeq h_{j,j},\hspace{20pt}\beta_j \defeq h_{j+1,j}.
 \end{equation*}
 From this hypothesis on $ A $, it follows that the matrix $ H_j $, which is both upper and lower Hessenberg 
-matrix, is also symmetric, hence it is tridiagonal—from now we will refer to it as $ T_j $—hence
+matrix, is also symmetric; in other words, it is tridiagonal—from now on we will refer to it as $ T_j $. Hence
 the Arnoldi relation takes the form:
 
 \begin{equation*}
@@ -211,10 +211,10 @@ the Arnoldi relation takes the form:
 We implement the following Lanczos method implementation Algorithm \ref{alg:lanczos}, following \cite{susnjara2015} and
 \cite{demmel1997} with the following criterias: full reorthogonalization is triggered if loss of
 orthogonality is detected after calling Lanczos without orthogonalization, that is when $ \|V_M^{\top} V_M
-- I \|_2 > \varepsilon $ for a chosen $ \varepsilon = 10^{-2} $. When the algorithm is called
+- I \|_2 > \varepsilon $ for a chosen $ \varepsilon = 10^{-10} $. When the algorithm is called
 passing a given threshold $ \varepsilon_{\text{FOM}} $, it computes the residual $
-\|r_j^{\text{FOM}} \|_2  \mid \beta_j  \mid  \mid e_j^{\top}y_j^{\text{FOM}}$ solving the linear
-system $ T_jy_j^{\text{FOM}} = \|b\|_2 e_1 $ numerically calling Numpy's function \texttt{solve($ T_j $,$\|b\|_2$)}.
+\|r_j^{\text{FOM}} \|_2  = \mid \beta_j  \mid \cdot \mid e_j^{\top}y_j^{\text{FOM}} \mid$, solving the linear
+system $ T_jy_j^{\text{FOM}} = \|b\|_2 e_1 $ using Numpy's function \texttt{solve($ T_j $,$\|b\|_2$)}.
 
 \begin{algorithm}[ht!]
   \caption{Lanczos method in floating point arithmetic with FOM check.}
@@ -233,8 +233,8 @@ system $ T_jy_j^{\text{FOM}} = \|b\|_2 e_1 $ numerically calling Numpy's functio
 
     \State $\left\{
     \begin{array}{ll}
-        w \leftarrow w - \alpha_j &  \text{No reorthogonalization} \\
-        \text{\textbf{if} } j>0 \text{ \textbf{then} } w \leftarrow w - \beta_j \text{ \textbf{end
+        w \leftarrow w - \alpha_j v_j&  \text{No reorthogonalization} \\
+        \text{\textbf{if} } j>0 \text{ \textbf{then} } w \leftarrow w - \beta_j v_{j-1}\text{ \textbf{end
     if}} & \\ \\
         w = w - v_j(v_j^{\top}w) & \text{Full reorthogonalization} \\
         w = w - v_j(v_j^{\top}w) 
@@ -247,7 +247,7 @@ system $ T_jy_j^{\text{FOM}} = \|b\|_2 e_1 $ numerically calling Numpy's functio
       \Return $ V_j(:,1:j), \alpha_j(1:j), \beta_j(1:j-1) $
       \Comment{--- Breakdown ---}
     \Else
-      \If{$ \|r_j^{\text{FOM}}\|_2 =  \mid b_j\mid  \mid e_j^{\top}y_j^{\text{FOM}} \mid <
+      \If{$ \|r_j^{\text{FOM}}\|_2 =  \mid b_j\mid \cdot \mid e_j^{\top}y_j^{\text{FOM}} \mid <
       \varepsilon_{\text{FOM}}$}
       \State 
       \Return $ V_j(:,1:j), \alpha_j(1:j), \beta_j(1:j-1) $
