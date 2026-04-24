@@ -80,7 +80,9 @@
 \maketitle
 
 \begin{abstract}
-    \noindent The Lanczos algorithm \ldots 
+    \noindent Signal processing on graph is becoming . We develop an efficient implementation of the Lanczos
+    method that performs full orthogonalization when loss of orthogonality is detected. We discuss
+    and test \ldots
 \end{abstract}
 
 {\setlength{\parskip}{0em}
@@ -170,6 +172,7 @@ define them as the current implementation in PyGSP:
   
 \end{remark}
 
+AD Laplacian properties
 
 \subsection{The Lanczos method}
 
@@ -178,7 +181,7 @@ define them as the current implementation in PyGSP:
 A^{j-1}b\}  $. We represent the basis of this subspace with a matrix $ V_M = \left[ v_1,\dots,v_M
 \right] \in \R^{N \times M}$.
 \end{definition}
-We begin considering the Arnoldi relation
+From the Arnoldi relation
 \begin{equation*}
   AV_j = V_jH_j + h_{j+1,j}v_{j+1}e_j^{*}, \\ \hspace{20pt}
   H_j = V_j^{*}AV_j =
@@ -189,12 +192,12 @@ We begin considering the Arnoldi relation
            & & h_{j,j-1} & h_{j,j}.
   \end{bmatrix},
 \end{equation*}
-and we derive the Lanczos method for a symmetric, positively defined matrix $ A $ letting
+we can derive the Lanczos method for a symmetric, positively defined matrix $ A $. Setting
 \begin{equation*}
 \alpha_j \defeq h_{j,j},\hspace{20pt}\beta_j \defeq h_{j+1,j}.
 \end{equation*}
-From this hypothesis on $ A $, it follows that the matrix $ H_j $, which is both upper and lower Hessenberg 
-matrix, is also symmetric; in other words, it is tridiagonal—from now on we will refer to it as $ T_j $. Hence
+From our hypothesis on $ A $, it follows that the matrix $ H_j $, which is both upper and lower Hessenberg 
+matrix, is also symmetric; in other words, it is tridiagonal—thus we rename it $ T_j $. Hence
 the Arnoldi relation takes the form:
 
 \begin{equation*}
@@ -207,11 +210,17 @@ the Arnoldi relation takes the form:
   \end{bmatrix}.
 \end{equation*}.
 
+HERE talk about FOM
+
 \subsection{Algorithm}
-We implement the following Lanczos method implementation Algorithm \ref{alg:lanczos}, following \cite{susnjara2015} and
-\cite{demmel1997} with the following criterias: full reorthogonalization is triggered if loss of
-orthogonality is detected after calling Lanczos without orthogonalization, that is when $ \|V_M^{\top} V_M
-- I \|_2 > \varepsilon $ for a chosen $ \varepsilon = 10^{-10} $. When the algorithm is called
+
+In floating point arithmetic the basis $ V $ stops being orthogonal, and orthogonalizing
+the incoming vector $ w $ only against $ v_j,v_{j-1} $ is not sufficient anymore: we need to apply
+this process with all the previous basis vectors. To do so, we implement Algorithm \ref{alg:lanczos}, 
+following \cite{susnjara2015} and \cite{demmel1997} with these criteria: full reorthogonalization is triggered if loss of
+orthogonality is detected after calling Lanczos without orthogonalization, that is when $ V_M $ is
+weakly orthogonal, that is $ \|V_M^{\top} V_M
+- I \|_2 > \varepsilon $ for a chosen threshold $ \varepsilon = 10^{-10} $. When the algorithm is called
 passing a given threshold $ \varepsilon_{\text{FOM}} $, it computes the residual $
 \|r_j^{\text{FOM}} \|_2  = \mid \beta_j  \mid \cdot \mid e_j^{\top}y_j^{\text{FOM}} \mid$, solving the linear
 system $ T_jy_j^{\text{FOM}} = \|b\|_2 e_1 $ using Numpy's function \texttt{solve($ T_j $,$\|b\|_2$)}.
@@ -270,8 +279,8 @@ system $ T_jy_j^{\text{FOM}} = \|b\|_2 e_1 $ using Numpy's function \texttt{solv
 
 \subsection{}
 
-Consider the filter $ g : [0, \lambda_{\text{max}}] \to \R$ and a signal vector $ s \in \R^N $, by a
-a result of Gallopolus and Saad (see ?) it holds\footnote{This results holds outside the graph
+Consider the filter $ g : [0, \lambda_{\text{max}}] \to \R$ and a signal vector $ s \in \R^N $, from
+what we saw in the class, it holds\footnote{This results holds outside the graph
   signal processing context, that is for any function $f :\Omega \to \C$, where $ \Omega \subset \Lambda(A) $.} that
 \begin{equation}
  g(\L)s \approx \norm{s}_2 V_M g(T_M) e_1 \eqdef g_M \label{eq:1}
@@ -349,8 +358,11 @@ From the experimentation we observed that we need to adapt the filter function a
 
 \section{Conclusions \& future work}
 
-Lanczos implementation could be improved by implementing selective reorthogonalization as described
-in \cite{demmel1997}, however such improvement falls behind the scope of this course.
+We did't address the high memory cost of $ O(N\cdot M) $ of Lanczos, this could be avoided by
+using a two-step implementation, that stores only three vectors and reconstructs the basis when
+needed. Further, because full orthogonalization was widely used in the second experiment, we could
+implement selective reorthogonalization as described in \cite{demmel1997}, but both methods fall
+behind the objective of this course.
 
 \clearpage
 \bibliographystyle{unsrt}
