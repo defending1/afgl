@@ -23,7 +23,7 @@ afgl-run = "afgl.main:run"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[depencency-groups]
+[dependency-groups]
 dev = [
     "pre-commit>=4.5.1",
     "pytest>=8.0.0",
@@ -33,8 +33,8 @@ dev = [
 [tool.ruff]
 # The standard modern line length
 line-length = 88
-# Enable "E" (Error) and "F" (Flake8) codes by default
-select = ["E", "F", "I"] # "I" handles automatic import sorting (isort)
 
 [tool.ruff.lint]
+# Enable "E" (Error) and "F" (Flake8) codes by default
+select = ["E", "F", "I"] # "I" handles automatic import sorting (isort)
 ignore = []
