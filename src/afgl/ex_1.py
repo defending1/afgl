@@ -84,7 +84,7 @@ def run_comparison_1_for_graph(
     """
     G.compute_laplacian("combinatorial")
     G.estimate_lmax()
-    G.L = G.L / G.lmax
+    G.L = G.L / (2 * G.lmax)
     L = G.L
 
     j = 3
@@ -126,7 +126,7 @@ def run() -> None:
     M = 200
     p = 0.04
 
-    s = np.random.randint(1, 10000, N).astype(float)
+    s = np.random.rand(N).astype(float)
     # Normalize s as in request
     s /= LA.norm(s)
 
@@ -137,4 +137,4 @@ def run() -> None:
     l_err_S, t_err_S = run_comparison_1_for_graph(G_S, s, M)
 
     plot_error_comparison(l_err_ER, t_err_ER, l_err_S, t_err_S)
-    run_plot_graphs(G_ER, G_S, s, N, p)
+    # run_plot_graphs(G_ER, G_S, s, N, p)

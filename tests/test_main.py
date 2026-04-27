@@ -6,13 +6,45 @@ from afgl.util.T_tridiag import T_tridiag
 from pygsp import graphs
 
 
-def g_evaluation_should_respect_chi():
+def is_sorted(a):
+    return np.all(a[:-1] <= a[1:])
+
+
+def test_rescaling_L_should_give_T_with_eigvals_in_range():
+    p = 0.04
+    M = 200
+    N = 1000
+    s = np.random.rand(N).astype(float)
+
+    G = graphs.ErdosRenyi(N, p)
+    G.compute_laplacian("combinatorial")
+    G.estimate_lmax()
+    G.L = G.L / (2 * G.lmax)
+    G.compute_fourier_basis()
+    assert min(G.e) > -1 / 2 and max(G.e) < 1 / 2
+
+    (
+        V,
+        alp,
+        beta,
+        _,
+    ) = lanczos(G.L, s, M)
+
+    T = T_tridiag(alp, beta)
+
+    eigvals, _ = LA.eigh(T)
+    assert -1 / 2 < min(eigvals) and max(eigvals) < 1 / 2
+
+    assert is_sorted(eigvals)
+
+
+def test_g_evaluation_should_respect_chi():
     A = np.array([[1, 0, 1], [0, 0, 0], [1, 0, 0]])
     expected_gA = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 1]])
     assert (expected_gA == g(A).astype(int)).all()
 
 
-def g_evaluation_should_return_matrix_of_zeros():
+def test_g_evaluation_should_return_matrix_of_zeros():
     A = 1 / 2 * np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
 
     assert (g(A).astype(int) == np.zeros((3, 3))).all()

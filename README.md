@@ -20,6 +20,19 @@ Project description
 - **Format**: `uv run ruff format .`
 - **Lint**: `uv run ruff check . --fix`
 
+## Project structure
+
+```
+├── out (generated files)
+├── report (project report)
+│   ├── assets
+│   └── test
+├── src (source code)
+│   └── afgl
+│       └── util
+└── tests (unit tests)
+```
+
 ## References
 
 [1] Susnjara et al., Accelerated filtering on graphs using Lanczos method.
