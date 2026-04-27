@@ -1,8 +1,8 @@
 import numpy as np
 import numpy.linalg as LA
 from afgl.ex_1 import compute_g_M, filter_signal_with_fourier, g
-from afgl.util.build_T_matrix import build_T_matrix
 from afgl.util.lanczos import lanczos
+from afgl.util.T_tridiag import T_tridiag
 from pygsp import graphs
 
 
@@ -38,7 +38,7 @@ def test_lanczos_return_correct_solution_with_dense():
         _,
     ) = lanczos(L, s, M)
 
-    T = build_T_matrix(alp, beta)
+    T = T_tridiag(alp, beta)
 
     x = LA.solve(L, s)
     e_1 = np.zeros(len(alp))

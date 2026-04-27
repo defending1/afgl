@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def build_T_matrix(alp, beta):
+def T_tridiag(alp, beta):
     """Constructs Lanczos T tridiagonal matrix.
 
     Args:

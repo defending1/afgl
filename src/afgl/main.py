@@ -1,15 +1,14 @@
 import sys
 
-from afgl.ex_23 import Ex23
-from afgl.util.ex23_plot import plot
+import afgl.ex_1 as ex_1
 from afgl.util.plot import plot_setup
 
 
 def run() -> None:
     plot_setup()
-    # ex_1.run()
-    Ex23(3, 1).run()
-    plot()
+    ex_1.run()
+    # Ex23(3, 1).run()
+    # plot()
 
 
 if __name__ == "__main__":

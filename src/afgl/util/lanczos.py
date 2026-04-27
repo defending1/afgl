@@ -1,11 +1,11 @@
 import numpy as np
 import numpy.linalg as LA
-from afgl.util.build_T_matrix import build_T_matrix
+from afgl.util.T_tridiag import T_tridiag
 
 
 def full_orthogonalization(V, w, j):
     for _ in range(2):
-        # Remember that numpy slicing is not inclusive, thus hereunder we are
+        # Remember that numpy slicing is not inclusive, thus mathematically we are
         # considering the submatrix V(:,0:j)
         w = w - V[:, : j + 1] @ (V[:, : j + 1].T @ w)
 
@@ -24,7 +24,7 @@ def FOM_reminder(alp, beta, j, s):
     e_1 = np.zeros(j)
     e_1[0] = 1
 
-    T_j = build_T_matrix(alp[:j], beta[: j - 1])
+    T_j = T_tridiag(alp[:j], beta[: j - 1])
     y_j = LA.solve(T_j, LA.norm(s) * e_1)
 
     return abs(beta[j - 1]) * abs(y_j[-1])

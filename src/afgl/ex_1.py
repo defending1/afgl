@@ -8,9 +8,9 @@ import scienceplots  # noqa: F401
 import scipy
 from pygsp import graphs
 
-from afgl.util.build_T_matrix import build_T_matrix
 from afgl.util.lanczos import lanczos
 from afgl.util.plot import latex_log_formatter
+from afgl.util.T_tridiag import T_tridiag
 
 
 def plot_graphs(G_ER, G_Sensor, s: np.ndarray, N: int, p: float) -> None:
@@ -60,6 +60,7 @@ Steps tried:
   gives smooth curve but it goes too low
 - Translating np.sin(1 / 2 * np.pi * (np.cos(np.pi * t - 1/2) ** 2)) and
   normalizing L as above, it gives close errors but curves are not smooth.
+- Dividing L by l_max*2
 
 """
 
@@ -92,7 +93,7 @@ def compute_g_M(
     M = len(alp)
     e_1 = np.zeros(M)
     e_1[0] = 1
-    T = build_T_matrix(alp, beta)
+    T = T_tridiag(alp, beta)
 
     eigvals, eigvecs = LA.eigh(T)
     g_T = eigvecs @ np.diag(g(eigvals)) @ eigvecs.T
@@ -102,6 +103,9 @@ def compute_g_M(
 
 
 def filter_signal_with_fourier(G, s: np.ndarray) -> np.ndarray:
+    """Returns evaluation Ug(Λ)U*s, which is the filtered signal using the
+    fourier basis.
+    """
     G.compute_fourier_basis()
     U = G.U
     return (U @ np.diag(g(G.e)) @ U.T) @ s
@@ -147,7 +151,7 @@ def run_comparison_1_for_graph(
     """
     G.compute_laplacian("combinatorial")
     G.estimate_lmax()
-    G.L /= G.lmax
+    G.L = G.L / G.lmax
     L = G.L
 
     j = 3
