@@ -24,6 +24,7 @@
 \usepackage{mathtools}
 \usepackage{nccmath}
 \usepackage{eucal}
+\usepackage{todonotes}
 \usepackage[most]{tcolorbox}
 \newtcolorbox[auto counter]{problem}[1][]{%
     enhanced,
@@ -55,6 +56,7 @@
 \newcommand{\defeq}{\vcentcolon=}
 \newcommand{\eqdef}{=\vcentcolon}
 \newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\Kr}[3]{\mathcal{K}_{#1}(#2,#3)}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -126,16 +128,14 @@ problem.
     \L = U \Lambda U^{*},
   \end{equation*}
   where $ U = \left[ u_0,\dots,u_{N-1} \right] \in O(N)$ is called Fourier basis, and $ \Lambda =
-  \text{diag}\left(\lambda_0, \dots, \lambda_{N-1}\right)$ is the matrix of eigenvalues of $ \L $,
-  without loss of generality we can assume $ 0 =\lambda_0 \leq \lambda_1  \dots \leq \lambda_{N-1} $
+  \text{diag}\left(\lambda_0, \dots, \lambda_{N-1}\right)$ is the matrix of eigenvalues of $ \L $.
+  Without loss of generality we can assume $ 0 =\lambda_0 \leq \lambda_1  \dots \leq \lambda_{N-1} $
   and the vectors in $ U $ to be in the same order that the eigenvalues.
-  \footnote{this assumption is aligned with the PyGSP $ \text{compute\_fourier\_basis()} $ function
-  implementation, used in this work to compute the matrix $ \Lambda $. Clarifying this assumption is
-outside our scope.}.
-\end{remark}
+  \end{remark}
 
 \begin{definition}[Graph signal]
-  A graph signal is a continuous function $ g : \R^+ \to \R $.
+  A graph signal is a continuous function $ g : \R^+ \to \R $. For our needs, we will assume $ g $ to be
+  defined on the spectrum of $ \L $.
 \end{definition}
 Diagonalising the Laplacian would give an easy way to compute the function $ g(\L) $ by
 evaluating it on the eigenvalues of $ \L $, which means computing $ g(\L) = U g(\Lambda) U^{*} $.
@@ -145,14 +145,14 @@ In matrix notation, applying a filter to a graph $ \G $ corresponds to the opera
 \end{equation*}
 \begin{remark}[Computational cost]
 Computing the Fourier basis for $ \L $ is computationally expensive for large graphs, thus the
-choice of using the Lanczos method for $ g(\L) $, with its computational cost of $ O(M \dot |\E|) $,
-it offers an efficient alternative in computing $ g(\L) $. However, storing the basis $ V_M $ costs MN
+choice of using the Lanczos method for $ g(\L) $, with its computational cost of $ O(M \dot |\E|) =
+O(M \dot N)$ \todo{CHECK and move computational cost of lanczos (all orgthogs) up}, it offers an efficient alternative in computing $ g(\L) $. However, storing the basis $ V_M $ costs MN
 additional memory, that could be avoided using a two-step implementation, that we leave for future
 work.
 \end{remark}
 
 In this work, we will restrict ourself to two graph models: Erdős-Rényi and Sensor graphs. We shall
-define them as the current implementation in PyGSP:
+define them as the current implementation in Library \ref{pygsp} 
 \begin{definition}[Erdős-Rényi graph]
   We define Erdős-Rényi graph $ \G_{N,p} $, where $ N $ is the number of nodes, and $ p $ the
   probability of connecting a node with another one, as the graph constructed by randomly connecting
@@ -176,7 +176,7 @@ AD Laplacian properties
 
 \subsection{The Lanczos method}
 
-\begin{definition}
+\begin{definition}[Krylov subspace]
  Given a matrix $ A \in \R^{N \times N} $ and a vector $ b \in R^N $, the Krylov subspace of order $j$ is defined as the set $ \mathcal{K}_j (A,b) = \{ b, Ab, A^2b, \dots,
 A^{j-1}b\}  $. We represent the basis of this subspace with a matrix $ V_M = \left[ v_1,\dots,v_M
 \right] \in \R^{N \times M}$.
@@ -210,7 +210,18 @@ the Arnoldi relation takes the form:
   \end{bmatrix}.
 \end{equation*}.
 
-HERE talk about FOM
+\begin{definition}
+  If $ x_l $ is an approximated solution to $ Ax = b $, we define the residual as $ r_l = b - Ax_l $.
+\end{definition}
+In the course we studied two criteria to identify the approximated solution for a general Krylov
+method, which are \emph{GMRES} and \emph{FOM}:
+\begin{itemize}
+  \item \textbf{GMRES:} We require that the residual $ r_l $ is minimized along all possible vectors
+  in $ \Kr{l}{A}{b}$, that is $ x_l = \text{arg}\min_{x\in \Kr{l}{A}{b}}\|b-Ax\|_2 $.
+  \item \textbf{FOM:} We require $ r_l $ to be orthogonal to $ \Kr{l}{A}{b} $.
+\end{itemize}
+In the case of $ A $ symmetric, these methods become \emph{MINRES} and \emph{Conjugate Gradient}
+respectively.
 
 \subsection{Algorithm}
 
@@ -224,6 +235,9 @@ weakly orthogonal, that is $ \|V_M^{\top} V_M
 passing a given threshold $ \varepsilon_{\text{FOM}} $, it computes the residual $
 \|r_j^{\text{FOM}} \|_2  = \mid \beta_j  \mid \cdot \mid e_j^{\top}y_j^{\text{FOM}} \mid$, solving the linear
 system $ T_jy_j^{\text{FOM}} = \|b\|_2 e_1 $ using Numpy's function \texttt{solve($ T_j $,$\|b\|_2$)}.
+Later on, we evaluate the matrix function $ g(A) $ by evaluating $  g_M \defeq \|b \|_2V_Mg(T_M)e_1
+$, where $ g(T_M) $ is computed by diagonalizing $ T_M $: because $ T_M $ is symmetric and tridiagonal, 
+computing its eigendecomposition is stable and efficient. \todo{why? cost?}
 
 \begin{algorithm}[ht!]
   \caption{Lanczos method in floating point arithmetic with FOM check.}
@@ -245,8 +259,8 @@ system $ T_jy_j^{\text{FOM}} = \|b\|_2 e_1 $ using Numpy's function \texttt{solv
         w \leftarrow w - \alpha_j v_j&  \text{No reorthogonalization} \\
         \text{\textbf{if} } j>0 \text{ \textbf{then} } w \leftarrow w - \beta_j v_{j-1}\text{ \textbf{end
     if}} & \\ \\
-        w = w - v_j(v_j^{\top}w) & \text{Full reorthogonalization} \\
-        w = w - v_j(v_j^{\top}w) 
+        w = w - \sum_{i=1}^j (w^{\top}v_i)v_i & \text{Full reorthogonalization} \\
+        w = w - \sum_{i=1}^j (w^{\top}v_i)v_i 
     \end{array}
     \right.$
     \If{$ j < M $}
@@ -272,6 +286,14 @@ system $ T_jy_j^{\text{FOM}} = \|b\|_2 e_1 $ using Numpy's function \texttt{solv
 \end{algorithm}
 
 
+\begin{remark}[Computational cost]
+  Lanczos algorithm computes $ V $  with partial orthogonalization, with $ O(M \cdot N
+  + M \cdot \text{nnz}(A)) $ for a sparse matrix \footnote{note that the product $ Av_j $ dominates the cost,
+  and that $ \text{nnz}(A) = N^2 $ when $ A $ is dense.}. With full orthogonalization, computing $ w = w -
+  \sum_{i=1}^j v_i(v_i^{\top}w) $ can cost up
+  to $ O(M\cdot N) $, thus the total cost becomes $ O(M^2N +  M\cdot \text{nnz}(A)) $. \todo{cost of computing FOM} While it is an efficient
+  method for small $ M\ll N $ for computing the basis of a Krylov subspace, it has a significant $ O(M \cdot N) $ memory cost for storing $ V_M $.
+\end{remark}
 
 
 
