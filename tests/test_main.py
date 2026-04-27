@@ -1,13 +1,29 @@
 import numpy as np
 import numpy.linalg as LA
+import scipy.linalg as SCLA
 from afgl.ex_1 import compute_g_M, filter_signal_with_fourier, g
 from afgl.util.lanczos import lanczos
-from afgl.util.T_tridiag import T_tridiag
 from pygsp import graphs
 
 
 def is_sorted(a):
     return np.all(a[:-1] <= a[1:])
+
+
+def test_if_T_is_symmetric():
+    N = 1000
+    M = 200
+    p = 0.04
+    s = np.random.rand(N).astype(float)
+
+    G = graphs.ErdosRenyi(N, p)
+    G.compute_laplacian("combinatorial")
+    G.estimate_lmax()
+    G.L = G.L / (2 * G.lmax)
+
+    _, T, debug = lanczos(G.L, s, M)
+
+    assert SCLA.issymmetric(T)
 
 
 def test_rescaling_L_should_give_T_with_eigvals_in_range():
@@ -25,12 +41,9 @@ def test_rescaling_L_should_give_T_with_eigvals_in_range():
 
     (
         V,
-        alp,
-        beta,
+        T,
         _,
     ) = lanczos(G.L, s, M)
-
-    T = T_tridiag(alp, beta)
 
     eigvals, _ = LA.eigh(T)
     assert -1 / 2 < min(eigvals) and max(eigvals) < 1 / 2
@@ -65,15 +78,12 @@ def test_lanczos_return_correct_solution_with_dense():
     s = np.random.randint(1, 10, N)
     (
         V,
-        alp,
-        beta,
+        T,
         _,
     ) = lanczos(L, s, M)
 
-    T = T_tridiag(alp, beta)
-
     x = LA.solve(L, s)
-    e_1 = np.zeros(len(alp))
+    e_1 = np.zeros(T.shape[0])
     e_1[0] = 1
     y = (LA.inv(T) @ e_1) * LA.norm(s)
     x_lanczos = V @ y
@@ -102,15 +112,14 @@ def test_function_g_with_graph_laplacian():
             L = G.L
             (
                 V,
-                alp,
-                beta,
+                T,
                 _,
             ) = lanczos(L, s, M + j)
 
             GLs = filter_signal_with_fourier(G, s)
 
-            g_M = compute_g_M(V[:, 0:M], alp[0:M], beta[0 : M - 1], s)
-            g_Mj = compute_g_M(V[:, 0 : M + j], alp[0 : M + j], beta[0 : M + j - 1], s)
+            g_M = compute_g_M(V[:, 0:M], T[:M, :M], s)
+            g_Mj = compute_g_M(V[:, 0 : M + j], T[: M + j, : M + j], s)
 
             diff = LA.norm(g_Mj - g_M)
             e_M = LA.norm(GLs - g_M)

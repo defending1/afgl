@@ -63,7 +63,7 @@ class Ex23:
         eps = 1e-3
 
         start = time.perf_counter()
-        _, _, _, debug = lanczos(L, s, M, eps)
+        _, _, debug = lanczos(L, s, M, eps)
         end = time.perf_counter()
 
         return {

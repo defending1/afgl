@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.linalg as LA
+
 from afgl.util.T_tridiag import T_tridiag
 
 
@@ -101,4 +102,5 @@ def lanczos(L, s, M, eps_FOM=None):
         V, alp, beta, early_stop = lanczos_iteration(L, s, M, True, eps_FOM)
         full_ortho = True
 
-    return V, alp, beta, [full_ortho, early_stop]
+    T = T_tridiag(alp, beta)
+    return V, T, [full_ortho, early_stop]

@@ -8,7 +8,6 @@ from pygsp import graphs
 
 from afgl.util.ex1_plot import plot_error_comparison, plot_graphs
 from afgl.util.lanczos import lanczos
-from afgl.util.T_tridiag import T_tridiag
 
 """
 TODO: Fix this misbehaviour
@@ -42,16 +41,13 @@ def g(T: np.ndarray) -> np.ndarray:
     return np.where(Chi, g_extended(T), 0)
 
 
-def compute_g_M(
-    V: np.ndarray, alp: np.ndarray, beta: np.ndarray, s: np.ndarray
-) -> np.ndarray:
+def compute_g_M(V: np.ndarray, T, s: np.ndarray) -> np.ndarray:
     """
     Computes the approximation g_M (see [1]) using Lanczos
     """
-    M = len(alp)
+    M = T.shape[0]
     e_1 = np.zeros(M)
     e_1[0] = 1
-    T = T_tridiag(alp, beta)
 
     eigvals, eigvecs = LA.eigh(T)
     g_T = eigvecs @ np.diag(g(eigvals)) @ eigvecs.T
@@ -90,8 +86,7 @@ def run_comparison_1_for_graph(
     j = 3
     (
         V,
-        alp,
-        beta,
+        T,
         _,
     ) = lanczos(L, s, M_MAX + j)
 
@@ -101,8 +96,8 @@ def run_comparison_1_for_graph(
     GLs = filter_signal_with_fourier(G, s)
 
     for M in range(1, M_MAX + 1):
-        g_M = compute_g_M(V[:, :M], alp[:M], beta[: M - 1], s)
-        g_Mj = compute_g_M(V[:, : M + j], alp[: M + j], beta[: M + j - 1], s)
+        g_M = compute_g_M(V[:, :M], T[:M, :M], s)
+        g_Mj = compute_g_M(V[:, : M + j], T[: M + j, : M + j], s)
 
         lanczos_err[M - 1] = LA.norm(g_Mj - g_M)
         true_err[M - 1] = LA.norm(GLs - g_M)
