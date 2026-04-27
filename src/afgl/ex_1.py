@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
 import numpy.linalg as LA
 
@@ -8,49 +6,9 @@ import scienceplots  # noqa: F401
 import scipy
 from pygsp import graphs
 
+from afgl.util.ex1_plot import plot_error_comparison, plot_graphs
 from afgl.util.lanczos import lanczos
-from afgl.util.plot import latex_log_formatter
 from afgl.util.T_tridiag import T_tridiag
-
-
-def plot_graphs(G_ER, G_Sensor, s: np.ndarray, N: int, p: float) -> None:
-    """Visualization of signal being filtered of two different types of graphs."""
-    fig, axs = plt.subplots(2, 2, figsize=(6.6, 5))
-
-    # Set coordinates
-    G_ER.set_coordinates()
-    G_Sensor.set_coordinates()
-
-    signal_ER = filter_signal_with_fourier(G_ER, s)
-    signal_S = filter_signal_with_fourier(G_Sensor, s)
-
-    # TOP LEFT
-    G_ER.plot(s, ax=axs[0, 0], vertex_size=15, edge_width=0.5, edge_color="gray")
-    axs[0, 0].set_title(rf"Erdős-Rényi Graph $(N = {N}, p = {p})$", pad=20)
-    axs[0, 0].set_axis_off()
-
-    # BOTTOM LEFT
-    G_ER.plot(
-        signal_ER, ax=axs[1, 0], vertex_size=15, edge_width=0.5, edge_color="gray"
-    )
-    axs[1, 0].set_title("", pad=20)
-    axs[1, 0].set_axis_off()
-
-    # TOP RIGHT
-    G_Sensor.plot(s, ax=axs[0, 1], vertex_size=15, edge_width=0.5, edge_color="gray")
-    axs[0, 1].set_title(rf"Sensor Network $(N = {N})$", pad=20)
-    axs[0, 1].set_axis_off()
-
-    # BOTTOM RIGHT
-    G_Sensor.plot(
-        signal_S, ax=axs[1, 1], vertex_size=15, edge_width=0.5, edge_color="gray"
-    )
-    axs[1, 1].set_title("", pad=20)
-    axs[1, 1].set_axis_off()
-
-    # Prevent label/title overlap
-    plt.savefig("./out/printed_graphs.pdf", bbox_inches="tight")
-
 
 """
 TODO: Fix this misbehaviour
@@ -111,31 +69,6 @@ def filter_signal_with_fourier(G, s: np.ndarray) -> np.ndarray:
     return (U @ np.diag(g(G.e)) @ U.T) @ s
 
 
-def plot_error_comparison(
-    l_err_ER: np.ndarray, t_err_ER: np.ndarray, l_err_S: np.ndarray, t_err_S: np.ndarray
-) -> None:
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.6, 2.5))
-
-    ax1.plot(l_err_S, label=r"$\left\lVert g_{M+3} - g_M \right\rVert_2$")
-    ax1.plot(t_err_S, label=r"$\left\lVert e_M \right\rVert_2$")
-    ax1.set_title("Sensor graph")
-
-    ax2.plot(l_err_ER, label=r"$\left\lVert g_{M+3} - g_M \right\rVert_2$")
-    ax2.plot(t_err_ER, label=r"$\left\lVert e_M \right\rVert_2$")
-    ax2.set_title("Erdős-Rényi graph")
-
-    # Apply formatting to both subplots
-    for ax in (ax1, ax2):
-        ax.xaxis.set_major_locator(ticker.MultipleLocator(50))
-        ax.set_yscale("log")
-        ax.yaxis.set_major_formatter(ticker.FuncFormatter(latex_log_formatter))
-        ax.legend()
-
-    plt.tight_layout()
-
-    plt.savefig("./out/ex1_estimate.pdf", bbox_inches="tight")
-
-
 def run_comparison_1_for_graph(
     G, s: np.ndarray, M_MAX: int
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -177,6 +110,13 @@ def run_comparison_1_for_graph(
     return lanczos_err, true_err
 
 
+def run_plot_graphs(G_ER, G_Sensor, s, N, p) -> None:
+    signal_ER = filter_signal_with_fourier(G_ER, s)
+    signal_S = filter_signal_with_fourier(G_Sensor, s)
+
+    plot_graphs(G_ER, G_Sensor, s, signal_ER, signal_S, N, p)
+
+
 def run() -> None:
     """Ripete il test corrispondente ad Example 1 dell'articolo limitandosi al
     metodo di Lanczos (no Chebyshev) e utilizzando come funzione g(t) = sin(0.5π
@@ -197,4 +137,4 @@ def run() -> None:
     l_err_S, t_err_S = run_comparison_1_for_graph(G_S, s, M)
 
     plot_error_comparison(l_err_ER, t_err_ER, l_err_S, t_err_S)
-    # plot_graphs(G_ER, G_S, s, N, p)
+    run_plot_graphs(G_ER, G_S, s, N, p)
