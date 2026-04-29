@@ -1,8 +1,11 @@
 import numpy as np
 import numpy.linalg as LA
 import scipy.linalg as SCLA
-from afgl.ex_1 import filter_signal_with_fourier
-from afgl.util.g_function import compute_g_itersine, compute_g_M
+from afgl.util.g_function import (
+    compute_g_itersine,
+    compute_g_M,
+    filter_signal_with_fourier,
+)
 from afgl.util.lanczos import lanczos
 from pygsp import graphs
 

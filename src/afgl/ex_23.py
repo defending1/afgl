@@ -7,6 +7,7 @@ import numpy.linalg as LA
 import pandas as pd
 from pygsp import graphs
 
+from afgl.util.g_function import compute_g_itersine
 from afgl.util.lanczos import lanczos
 
 
@@ -59,11 +60,13 @@ class Ex23:
         G.compute_laplacian("combinatorial")
         L = G.L
 
+        g = compute_g_itersine(G)
+
         # Lanczos method
         eps = 1e-3
 
         start = time.perf_counter()
-        _, _, debug = lanczos(L, s, M, eps)
+        _, _, debug = lanczos(L, s, M, g, eps)
         end = time.perf_counter()
 
         return {
@@ -73,6 +76,7 @@ class Ex23:
             f"Time {ex_num}": end - start,
             "Orthogonalization": "Full" if debug[0] else "Partial",
             "Breakdown": debug[1],
+            "Stopping index": debug[2],
             "$\\varepsilon$": eps,
         }
 

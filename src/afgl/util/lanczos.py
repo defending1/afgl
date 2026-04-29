@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.linalg as LA
 
+from afgl.util.g_function import compute_g_M
 from afgl.util.T_tridiag import T_tridiag
 
 
@@ -20,25 +21,14 @@ def classic_orthogonalization(V, w, alp, beta, j):
     return w
 
 
-def FOM_reminder(alp, beta, j, s):
-    """Computes r_j^{(FOM)} = |b_j||y_j^T e_j|"""
-    e_1 = np.zeros(j)
-    e_1[0] = 1
-
-    T_j = T_tridiag(alp[:j], beta[: j - 1])
-    y_j = LA.solve(T_j, LA.norm(s) * e_1)
-
-    return abs(beta[j - 1]) * abs(y_j[-1])
-
-
-def lanczos_iteration(L, s, M, full_ortho, eps_FOM=None):
+def lanczos_iteration(L, s, M, g, full_ortho, eps_STOP=None):
     N = len(s)
     alp = np.zeros(M)
     beta = np.zeros(M - 1)
     V = np.zeros((N, M))
     V[:, 0] = s / LA.norm(s)
 
-    early_stop = "No"
+    break_reason = "No"
 
     for j in range(M):
         w = L @ V[:, j]
@@ -53,21 +43,24 @@ def lanczos_iteration(L, s, M, full_ortho, eps_FOM=None):
             beta[j] = LA.norm(w)
 
             if beta[j] < 1e-14:
-                early_stop = f"$\\beta[{j}]=0$"
-                return V[:, : j + 1], alp[: j + 1], beta[:j], early_stop
+                break_reason = "$\\beta_j=0$"
+                return V[:, : j + 1], alp[: j + 1], beta[:j], break_reason, j
             else:
-                if eps_FOM is not None:
-                    r_j_FOM_norm2 = FOM_reminder(alp, beta, j + 1, s)
-                    if r_j_FOM_norm2 < eps_FOM * LA.norm(s):
-                        early_stop = (
-                            f"$\\|r_j^{{FOM}}\\|_2  < \\varepsilon \\|s\\|_2 \n"
-                            f"\\text{{ at iteration }} = {j+1}$"
-                        )
-                        return V[:, : j + 1], alp[: j + 1], beta[:j], early_stop
+                if eps_STOP is not None and g is not None and (j + 1) - 3 > 0:
+                    T = T_tridiag(alp[: j + 1], beta[:j])
+                    g_j3 = compute_g_M(
+                        V[:, : (j + 1) - 3], T[: (j + 1) - 3, : (j + 1) - 3], s, g
+                    )
+                    g_j = compute_g_M(V[:, : j + 1], T[: j + 1, : j + 1], s, g)
+                    r_j = LA.norm(g_j - g_j3)
+
+                    if r_j < eps_STOP * LA.norm(s):
+                        break_reason = "Bound"
+                        return V[:, : j + 1], alp[: j + 1], beta[:j], break_reason, j
 
                 V[:, j + 1] = w / beta[j]
 
-    return V, alp, beta, early_stop
+    return V, alp, beta, break_reason, j
 
 
 def Arnoldi(A, s, m):
@@ -113,7 +106,7 @@ def Arnoldi(A, s, m):
     return V[:, : j + 1], H[: j + 1, : j + 1]
 
 
-def lanczos(L, s, M, eps_FOM=None):
+def lanczos(L, s, M, g=None, eps_STOP=None):
     """
     Lanczos extended method that calls re-orthogonalization when || V^T*V - I||
     < EPS_ORTHO.
@@ -122,8 +115,9 @@ def lanczos(L, s, M, eps_FOM=None):
     L : Real valued NxN symmetric matrix
     s : vector of size N
     M : natural number indicating basis size
-    eps_FOM: When passed float value, Lanczos method stops using FOM method,
-    that is when r_j_FOM_norm2 < eps_FOM.
+    g : itersine function to evaluate for stopping
+    eps_STOP: When passed float value, Lanczos method stops when \|g_{M+j} -
+    g_{M}\| < eps_STOP.
 
     Returns
     -------
@@ -137,13 +131,13 @@ def lanczos(L, s, M, eps_FOM=None):
     full_ortho = False
 
     EPS_ORTHO = 10e-10
-    V, alp, beta, early_stop = lanczos_iteration(L, s, M, False, eps_FOM)
+    V, alp, beta, break_reason, j = lanczos_iteration(L, s, M, g, False, eps_STOP)
 
     # Check basis orthogonality
     Id = np.eye(len(alp))
     if LA.norm(V.T @ V - Id) > EPS_ORTHO:
-        V, alp, beta, early_stop = lanczos_iteration(L, s, M, True, eps_FOM)
+        V, alp, beta, break_reason, j = lanczos_iteration(L, s, M, g, True, eps_STOP)
         full_ortho = True
 
     T = T_tridiag(alp, beta)
-    return V, T, [full_ortho, early_stop]
+    return V, T, [full_ortho, break_reason, j]
