@@ -295,11 +295,20 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
   method for small $ M\ll N $ for computing the basis of a Krylov subspace, it has a significant $ O(M \cdot N) $ memory cost for storing $ V_M $.
 \end{remark}
 
+\begin{remark}[Why double orthogonalization?]
+  From the experimental setting in Section \ref{ssec:ex1}, we observed that the orthogonality of the
+  basis $ V $ with Arnoldi was worse than Lanczos basis. Double orthogonalization showed good
+  results. One reason could be that the Laplacian matrices that we are considering are badly
+  conditioned. The following example motivates this choice: \todo{Add example}
+  example:
+\end{remark}
+
 
 
 \section{Experiments}
 
-\subsection{}
+\subsection{Comparing global error with projection error \todo{check error names}}
+\label{ssec:ex1}
 
 Consider the filter $ g : [0, \lambda_{\text{max}}] \to \R$ and a signal vector $ s \in \R^N $, from
 what we saw in the class, it holds\footnote{This results holds outside the graph
@@ -361,7 +370,7 @@ From the experimentation we observed that we need to adapt the filter function a
 \end{axis}
 \end{tikzpicture}
 
-\subsection{}
+\subsection{Performance comparison for Erdős-Rényi graphs}
 
 \begin{center}
   \label{table:ex23}
