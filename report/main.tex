@@ -177,8 +177,9 @@ AD Laplacian properties
 \subsection{The Lanczos method}
 
 \begin{definition}[Krylov subspace]
- Given a matrix $ A \in \R^{N \times N} $ and a vector $ b \in R^N $, the Krylov subspace of order $j$ is defined as the set $ \mathcal{K}_j (A,b) = \{ b, Ab, A^2b, \dots,
-A^{j-1}b\}  $. We represent the basis of this subspace with a matrix $ V_M = \left[ v_1,\dots,v_M
+ Given a matrix $ A \in \R^{N \times N} $ and a vector $ b \in R^N $, the Krylov subspace of order
+ $j$ is defined as the set $ \mathcal{K}_j (A,b) = \text{Span} \left(b, Ab, A^2b, \dots,
+A^{j-1}b\right)  $. We represent the basis of this subspace with a matrix $ V_M = \left[ v_1,\dots,v_M
 \right] \in \R^{N \times M}$.
 \end{definition}
 From the Arnoldi relation
@@ -239,8 +240,10 @@ Later on, we evaluate the matrix function $ g(A) $ by evaluating $  g_M \defeq \
 $, where $ g(T_M) $ is computed by diagonalizing $ T_M $: because $ T_M $ is symmetric and tridiagonal, 
 computing its eigendecomposition is stable and efficient. \todo{why? cost?}
 
+
+\todo{No FOM but next step error}
 \begin{algorithm}[ht!]
-  \caption{Lanczos method in floating point arithmetic with FOM check.}
+  \caption{Lanczos method in floating point arithmetic.}
   \label{alg:lanczos}
   \begin{algorithmic}
     \State \textbf{Input:} Symmetric matrix $ A \in \R^{N\times N}$, vector $ b \in R^N $, $ M \in
@@ -274,7 +277,7 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
       \varepsilon_{\text{FOM}}$}
       \State 
       \Return $ V_j(:,1:j), \alpha_j(1:j), \beta_j(1:j-1) $
-      \Comment{--- FOM breakdown ---}
+      \Comment{--- Breakdown ---}
       \EndIf
       \State $ v_{j+1} = \frac{w}{\beta_j} $
     \EndIf
@@ -295,14 +298,18 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
   method for small $ M\ll N $ for computing the basis of a Krylov subspace, it has a significant $ O(M \cdot N) $ memory cost for storing $ V_M $.
 \end{remark}
 
-\begin{remark}[Why double orthogonalization?]
+\subsubsection{Why double orthogonalization?}
+
   From the experimental setting in Section \ref{ssec:ex1}, we observed that the orthogonality of the
   basis $ V $ with Arnoldi was worse than Lanczos basis. Double orthogonalization showed good
   results. One reason could be that the Laplacian matrices that we are considering are badly
   conditioned. The following example motivates this choice: \todo{Add example}
   example:
-\end{remark}
-
+  \\
+  \ldots \\
+  \\
+  For efficiency, we decided to implement Lanczos with double orthogonalization instead of the Arnoldi
+  counterpart.
 
 
 \section{Experiments}
