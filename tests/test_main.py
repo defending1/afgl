@@ -1,7 +1,8 @@
 import numpy as np
 import numpy.linalg as LA
 import scipy.linalg as SCLA
-from afgl.ex_1 import compute_g_M, filter_signal_with_fourier, g
+from afgl.ex_1 import filter_signal_with_fourier
+from afgl.util.g_function import compute_g_itersine, compute_g_M
 from afgl.util.lanczos import lanczos
 from pygsp import graphs
 
@@ -51,18 +52,6 @@ def test_rescaling_L_should_give_T_with_eigvals_in_range():
     assert is_sorted(eigvals)
 
 
-def test_g_evaluation_should_respect_chi():
-    A = np.array([[1, 0, 1], [0, 0, 0], [1, 0, 0]])
-    expected_gA = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 1]])
-    assert (expected_gA == g(A).astype(int)).all()
-
-
-def test_g_evaluation_should_return_matrix_of_zeros():
-    A = 1 / 2 * np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
-
-    assert (g(A).astype(int) == np.zeros((3, 3))).all()
-
-
 def test_lanczos_return_correct_solution_with_dense():
     """Tests correctness of solution of Lx=s comparing Lanczos projected
     solution with numpy solve function.
@@ -110,16 +99,19 @@ def test_function_g_with_graph_laplacian():
         for G in GRAPHS:
             G.compute_laplacian()
             L = G.L
+
+            g = compute_g_itersine(G)
+
             (
                 V,
                 T,
                 _,
             ) = lanczos(L, s, M + j)
 
-            GLs = filter_signal_with_fourier(G, s)
+            GLs = filter_signal_with_fourier(G, s, g)
 
-            g_M = compute_g_M(V[:, 0:M], T[:M, :M], s)
-            g_Mj = compute_g_M(V[:, 0 : M + j], T[: M + j, : M + j], s)
+            g_M = compute_g_M(V[:, 0:M], T[:M, :M], s, g)
+            g_Mj = compute_g_M(V[:, 0 : M + j], T[: M + j, : M + j], s, g)
 
             diff = LA.norm(g_Mj - g_M)
             e_M = LA.norm(GLs - g_M)

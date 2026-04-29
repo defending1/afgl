@@ -3,66 +3,19 @@ import numpy.linalg as LA
 
 # Requires latex installed
 import scienceplots  # noqa: F401
-from pygsp import filters, graphs
+from pygsp import graphs
 
 from afgl.util.ex1_plot import plot_error_comparison, plot_graphs
+from afgl.util.g_function import compute_g_itersine, compute_g_M
 from afgl.util.lanczos import lanczos
 
-"""
-TODO: Fix this misbehaviour
-Steps tried: 
-- translating g to max eigenvalue (see gemini conversation)
-- Leaving g untouched (sure it's not ok) but normalizing L with L = L/lmax: it
-  gives smooth curve but it goes too low
-- Translating np.sin(1 / 2 * np.pi * (np.cos(np.pi * t - 1/2) ** 2)) and
-  normalizing L as above, it gives close errors but curves are not smooth.
-- Dividing L by l_max*2
 
-"""
-
-
-def g_extended(t: np.ndarray) -> np.ndarray:
-    return np.sin(1 / 2 * np.pi * (np.cos(np.pi * t) ** 2))
-
-
-"""
-Evaluates the function sin(0.5*pi*cos(pi*t)^2)chi_[-1/2,1/2] where chi_I is the
-characteristic function of I, as defined in example 1 (see [1]).
-"""
-
-
-def g_itersine(G, Nf=7):
-    G.estimate_lmax()
-    g = filters.Itersine(G, Nf=Nf)
-    return g
-
-
-def compute_g_M(G, V: np.ndarray, T, s: np.ndarray) -> np.ndarray:
-    """
-    Computes the approximation g_M (see [1]) using Lanczos
-    """
-    M = T.shape[0]
-    e_1 = np.zeros(M)
-    e_1[0] = 1
-
-    eigvals, U = LA.eigh(T)
-    g = g_itersine(G)
-    ev = g.evaluate(eigvals)
-    g_e = ev[0]
-
-    g_T = U @ np.diag(g_e) @ U.T
-
-    y = LA.norm(s) * (g_T @ e_1)
-    return V @ y
-
-
-def filter_signal_with_fourier(G, s: np.ndarray) -> np.ndarray:
+def filter_signal_with_fourier(G, s: np.ndarray, g) -> np.ndarray:
     """Returns evaluation Ug(Λ)U*s, which is the filtered signal using the
     fourier basis.
     """
     G.compute_fourier_basis()
     U = G.U
-    g = g_itersine(G)
     ev = g.evaluate(G.e)
     g_e = ev[0]
     return (U @ np.diag(g_e) @ U.T) @ s
@@ -82,11 +35,11 @@ def run_comparison_1_for_graph(
         as defined in [1]
     """
     G.compute_laplacian("combinatorial")
-    G.estimate_lmax()
-    # G.L = G.L / (2 * G.lmax)
     L = G.L
 
     j = 3
+    g = compute_g_itersine(G)
+
     (
         V,
         T,
@@ -96,11 +49,11 @@ def run_comparison_1_for_graph(
     lanczos_err = np.zeros(M_MAX)
     true_err = np.zeros(M_MAX)
 
-    GLs = filter_signal_with_fourier(G, s)
+    GLs = filter_signal_with_fourier(G, s, g)
 
     for M in range(1, M_MAX + 1):
-        g_M = compute_g_M(G, V[:, :M], T[:M, :M], s)
-        g_Mj = compute_g_M(G, V[:, : M + j], T[: M + j, : M + j], s)
+        g_M = compute_g_M(V[:, :M], T[:M, :M], s, g)
+        g_Mj = compute_g_M(V[:, : M + j], T[: M + j, : M + j], s, g)
 
         lanczos_err[M - 1] = LA.norm(g_Mj - g_M)
         true_err[M - 1] = LA.norm(GLs - g_M)
