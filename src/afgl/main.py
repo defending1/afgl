@@ -1,7 +1,7 @@
 import sys
 
-import afgl.ex_1 as ex1
-from afgl.ex_23 import Ex23
+import afgl.ex1 as ex1
+from afgl.ex23 import Ex23
 from afgl.plot.ex23 import plot_ex23
 from afgl.plot.setup import plot_setup
 
