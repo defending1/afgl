@@ -25,3 +25,14 @@ def compute_g_M(V: np.ndarray, T, s: np.ndarray, g) -> np.ndarray:
 
     y = LA.norm(s) * (g_T @ e_1)
     return V @ y
+
+
+def filter_signal_with_fourier(G, s: np.ndarray, g) -> np.ndarray:
+    """Returns evaluation g(L)=Ug(Λ)U*s, which is the filtered signal using the
+    fourier basis.
+    """
+    G.compute_fourier_basis()
+    U = G.U
+    ev = g.evaluate(G.e)
+    g_e = ev[0]
+    return (U @ np.diag(g_e) @ U.T) @ s

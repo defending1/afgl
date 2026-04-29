@@ -6,19 +6,12 @@ import scienceplots  # noqa: F401
 from pygsp import graphs
 
 from afgl.util.ex1_plot import plot_error_comparison, plot_graphs
-from afgl.util.g_function import compute_g_itersine, compute_g_M
+from afgl.util.g_function import (
+    compute_g_itersine,
+    compute_g_M,
+    filter_signal_with_fourier,
+)
 from afgl.util.lanczos import lanczos
-
-
-def filter_signal_with_fourier(G, s: np.ndarray, g) -> np.ndarray:
-    """Returns evaluation Ug(Λ)U*s, which is the filtered signal using the
-    fourier basis.
-    """
-    G.compute_fourier_basis()
-    U = G.U
-    ev = g.evaluate(G.e)
-    g_e = ev[0]
-    return (U @ np.diag(g_e) @ U.T) @ s
 
 
 def run_comparison_1_for_graph(
