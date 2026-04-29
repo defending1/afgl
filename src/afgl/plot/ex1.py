@@ -3,8 +3,7 @@ from typing import TYPE_CHECKING
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
-
-from afgl.util.plot import latex_log_formatter
+from afgl.plot.setup import latex_log_formatter
 
 if TYPE_CHECKING:
     from pygsp.graphs import Graph

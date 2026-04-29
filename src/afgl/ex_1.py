@@ -5,7 +5,7 @@ import numpy.linalg as LA
 import scienceplots  # noqa: F401
 from pygsp import graphs
 
-from afgl.util.ex1_plot import plot_error_comparison, plot_graphs
+from afgl.plot.ex1 import plot_error_comparison, plot_graphs
 from afgl.util.g_function import (
     compute_g_itersine,
     compute_g_M,

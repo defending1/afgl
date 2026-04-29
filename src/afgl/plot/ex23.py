@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def plot():
+def plot_ex23():
     df = pd.read_pickle("./out/ex_23.pkl")
     x = df["Time 2"]
     y = df["Time 3"]

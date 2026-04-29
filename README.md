@@ -29,7 +29,8 @@ Project description
 │   └── test
 ├── src (source code)
 │   └── afgl
-│       └── util
+│       └── util (numerical util functions)
+│       └── plot (plotting functions)
 └── tests (unit tests)
 ```
 
