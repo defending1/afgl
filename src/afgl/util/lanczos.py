@@ -70,6 +70,49 @@ def lanczos_iteration(L, s, M, full_ortho, eps_FOM=None):
     return V, alp, beta, early_stop
 
 
+def Arnoldi(A, s, m):
+    v = s
+    beta = LA.norm(v)
+    v = v / beta
+    H = np.zeros((m + 1, m))
+    V = np.zeros((A.shape[0], m + 1))
+    V[:, 0] = v
+
+    for j in range(m):
+        w1 = A @ V[:, j]
+
+        # First orthogonalization pass
+        h1 = V[:, : j + 1].T @ w1
+        w1 = w1 - V[:, : j + 1] @ h1
+        norm_w1 = LA.norm(w1)
+
+        # Temporary normalization
+        v_tmp = w1 / norm_w1
+
+        # Second orthogonalization pass
+        h2 = V[:, : j + 1].T @ v_tmp
+        w2 = v_tmp - V[:, : j + 1] @ h2
+        norm_w2 = LA.norm(w2)
+
+        # Matrix H coefficients
+        H[: j + 1, j] = h1 + h2
+        H[j + 1, j] = norm_w1 * norm_w2
+
+        if H[j + 1, j] == 0:
+            print("Arnoldi breakdown")
+            m = j
+            break
+        else:
+            if j < m - 1:
+                V[:, j + 1] = w2 / norm_w2
+
+    epsilon = np.finfo(H.dtype).eps
+    print(epsilon)
+    H[np.abs(H) < epsilon] = 0
+
+    return V[:, : j + 1], H[: j + 1, : j + 1]
+
+
 def lanczos(L, s, M, eps_FOM=None):
     """
     Lanczos extended method that calls re-orthogonalization when || V^T*V - I||
