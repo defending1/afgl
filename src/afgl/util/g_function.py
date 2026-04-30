@@ -9,30 +9,38 @@ def compute_g_itersine(G, Nf=7):
     return g
 
 
-def compute_g_M(V: np.ndarray, T, s: np.ndarray, g) -> np.ndarray:
+def compute_g_M(V: np.ndarray, T, s: np.ndarray, g, ch=0) -> np.ndarray:
     """
     Computes the approximation g_M (see [1]) using Lanczos
+
+    Args:
+        V: Lanczos basis
+        T: Tridiagonal matrix
+        s: signal
+        g: Itersine
+        ch: Itersine selected channel
+
     """
-    M = T.shape[0]
-    e_1 = np.zeros(M)
-    e_1[0] = 1
-
     eigvals, U = LA.eigh(T)
-    ev = g.evaluate(eigvals)
-    g_e = ev[0]
-
-    g_T = U @ np.diag(g_e) @ U.T
-
-    y = LA.norm(s) * (g_T @ e_1)
+    g_lambda = g.evaluate(eigvals)[ch]
+    u_1 = U.T[:, 0]
+    # Computing Ug(eigvals)U*e_1
+    y = LA.norm(s) * U @ (g_lambda * u_1)
     return V @ y
 
 
-def filter_signal_with_fourier(G, s: np.ndarray, g) -> np.ndarray:
+def filter_signal_with_fourier(G, s: np.ndarray, g, ch=0) -> np.ndarray:
     """Returns evaluation g(L)=Ug(Λ)U*s, which is the filtered signal using the
     fourier basis.
+
+    Args:
+        G: Graph
+        s: Signal
+        g: Itersine
+        ch: Itersine selected channel
     """
     G.compute_fourier_basis()
     U = G.U
     ev = g.evaluate(G.e)
-    g_e = ev[0]
+    g_e = ev[ch]
     return (U @ np.diag(g_e) @ U.T) @ s
