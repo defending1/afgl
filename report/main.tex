@@ -211,19 +211,23 @@ the Arnoldi relation takes the form:
   \end{bmatrix}.
 \end{equation*}.
 
-\begin{definition}
-  If $ x_l $ is an approximated solution to $ Ax = b $, we define the residual as $ r_l = b - Ax_l $.
-\end{definition}
-In the course we studied two criteria to identify the approximated solution for a general Krylov
-method, which are \emph{GMRES} and \emph{FOM}:
-\begin{itemize}
-  \item \textbf{GMRES:} We require that the residual $ r_l $ is minimized along all possible vectors
-  in $ \Kr{l}{A}{b}$, that is $ x_l = \text{arg}\min_{x\in \Kr{l}{A}{b}}\|b-Ax\|_2 $.
-  \item \textbf{FOM:} We require $ r_l $ to be orthogonal to $ \Kr{l}{A}{b} $.
-\end{itemize}
-In the case of $ A $ symmetric, these methods become \emph{MINRES} and \emph{Conjugate Gradient}
-respectively.
+\begin{proposition}
+ Consider the filter $ g : [0, \lambda_{\text{max}}] \to \R$ and a signal vector $ s \in \R^N $.
+ Then the Lanczos method approximates $ g(\L)s $ with: \footnote{This results holds in general for any function $f :\Omega \to \C$, where $ \Omega \subset \Lambda(A) $.}
+\begin{equation}
+ g(\L)s \approx  V_M \norm{s}_2 g(T_M) e_1 \eqdef g_M. \label{eq:projection}
+\end{equation}
+\end{proposition}
+Numerically, we compute the eigendecomposition $ (\Lambda,U) $ from $ T $, and then project $ g(T_M)
+= U^{\top}g(\Lambda)U $ using the equation above.
 
+
+In order to decide when we reached a good approximation of the matrix function, we define the
+following erros:
+\begin{definition}(Errors)
+  We define the Lanczos iteration error as $\norm{g_{M+j} - g_M}_2 $, where $ j $ is small, and the true
+error as $ \norm{e_M} = \norm{g(\L)s - g_M} $.
+\end{definition}
 \subsection{Algorithm}
 
 In floating point arithmetic the basis $ V $ stops being orthogonal, and orthogonalizing
@@ -233,10 +237,10 @@ following \cite{susnjara2015} and \cite{demmel1997} with these criteria: full re
 orthogonality is detected after calling Lanczos without orthogonalization, that is when $ V_M $ is
 weakly orthogonal, that is $ \|V_M^{\top} V_M
 - I \|_2 > \varepsilon $ for a chosen threshold $ \varepsilon = 10^{-10} $. When the algorithm is called
-passing a given threshold $ \varepsilon_{\text{FOM}} $, it computes the residual $
-\|r_j^{\text{FOM}} \|_2  = \mid \beta_j  \mid \cdot \mid e_j^{\top}y_j^{\text{FOM}} \mid$, solving the linear
-system $ T_jy_j^{\text{FOM}} = \|b\|_2 e_1 $ using Numpy's function \texttt{solve($ T_j $,$\|b\|_2$)}.
-Later on, we evaluate the matrix function $ g(A) $ by evaluating $  g_M \defeq \|b \|_2V_Mg(T_M)e_1
+passing a given threshold $ \varepsilon $, it computes the residual $
+\|r_j \|_2  = \| g_j - g_{j-3}\|$, which computes $ g $ using Equation \ref{eq:projection}.
+\\
+ $  g_M \defeq \|b \|_2V_Mg(T_M)e_1
 $, where $ g(T_M) $ is computed by diagonalizing $ T_M $: because $ T_M $ is symmetric and tridiagonal, 
 computing its eigendecomposition is stable and efficient. \todo{why? cost?}
 
@@ -288,6 +292,17 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
   
 \end{algorithm}
 
+\begin{algorithm}[ht!]
+  \caption{Evaluation of $ g(\L)s $.}
+  \label{alg:g_evaluation}
+  \begin{algorithmic}
+    \State \textbf{Input:} Itersine $ g $, Matrix $ T $, signal $ s $.
+    \State $ e, U = $ diagonalize($ T $)
+    \State 
+  \end{algorithmic}
+  
+\end{algorithm}
+
 
 \begin{remark}[Computational cost]
   Lanczos algorithm computes $ V $  with partial orthogonalization, with $ O(M \cdot N
@@ -297,6 +312,7 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
   to $ O(M\cdot N) $, thus the total cost becomes $ O(M^2N +  M\cdot \text{nnz}(A)) $. \todo{cost of computing FOM} While it is an efficient
   method for small $ M\ll N $ for computing the basis of a Krylov subspace, it has a significant $ O(M \cdot N) $ memory cost for storing $ V_M $.
 \end{remark}
+
 
 \subsubsection{Why double orthogonalization?}
 
@@ -317,18 +333,8 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
 \subsection{Comparing global error with projection error \todo{check error names}}
 \label{ssec:ex1}
 
-Consider the filter $ g : [0, \lambda_{\text{max}}] \to \R$ and a signal vector $ s \in \R^N $, from
-what we saw in the class, it holds\footnote{This results holds outside the graph
-  signal processing context, that is for any function $f :\Omega \to \C$, where $ \Omega \subset \Lambda(A) $.} that
-\begin{equation}
- g(\L)s \approx \norm{s}_2 V_M g(T_M) e_1 \eqdef g_M \label{eq:1}
-\end{equation}
 
-\begin{definition}(Errors)
-  We define the Lanczos iteration error as $\norm{g_{M+j} - g_M}_2 $, where $ j $ is small, and the true
-error as $ \norm{e_M} = \norm{g(\L)s - g_M} $.
-\end{definition}
-The scope of this experiment is verifying numerically equation \eqref{eq:1}
+The scope of this experiment is verifying numerically equation \eqref{eq:projection}
 
 Studiamo i grafi di Erdos-Reiny e di tipo Sensors. Dal plot possiamo 
 Figura (dida: Grafi di ER e sensor colorati in base al segnale (non filtrato, sopra) e filtrato
