@@ -219,7 +219,7 @@ the Arnoldi relation takes the form:
 \end{equation}
 \end{proposition}
 Numerically, we compute the eigendecomposition $ (\Lambda,U) $ from $ T $, and then project $ g(T_M)
-= U^{\top}g(\Lambda)U $ using the equation above.
+= Ug(\Lambda)U^{\top} $ using the equation above.
 
 
 In order to decide when we reached a good approximation of the matrix function, we define the
@@ -293,12 +293,27 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
 \end{algorithm}
 
 \begin{algorithm}[ht!]
-  \caption{Evaluation of $ g(\L)s $.}
+  \caption{Approximation of $ g(\L)s $ using Lanczos.}
   \label{alg:g_evaluation}
   \begin{algorithmic}
-    \State \textbf{Input:} Itersine $ g $, Matrix $ T $, signal $ s $.
-    \State $ e, U = $ diagonalize($ T $)
-    \State 
+    \State \textbf{Input:} Function $ g $, Matrix $ T $, signal $ s $.
+    \State $ \Lambda, U \leftarrow $ diagonalize($ T $)  \Comment{Here $ \Lambda $ is the vector of
+    eigenvalues.}
+    \State $y = \|s\| U (\text{Diag}(g(\Lambda)) U^{\top})e_1 = \|s\| U (g(\Lambda) \odot
+    (U^{\top})_{:,1})$
+    \State \Comment{We denote with $ u \odot v $ the element-wise product between
+  two vectors $ u $ and $ v $.}
+    \State \Return $ Vy $
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[ht!]
+  \caption{Evaluation of $ g(\L)s $ using Fourier basis.}
+  \label{alg:g_evaluation_fourier}
+  \begin{algorithmic}
+    \State \textbf{Input:} Function $ g $, Graph $ \G $, signal $ s $.
+    \State $ \Lambda,U \leftarrow \text{Fourier\_basis}( \G )$
+    \State \Return $ U \text{Diag}(g(\Lambda)) U^{\top}s $
   \end{algorithmic}
   
 \end{algorithm}
