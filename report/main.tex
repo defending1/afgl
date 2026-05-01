@@ -21,11 +21,11 @@
 \usepackage{lipsum}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
-\usepackage{mathtools}
 \usepackage{nccmath}
 \usepackage{eucal}
 \usepackage{todonotes}
 \usepackage[most]{tcolorbox}
+\usepackage{wrapfig}
 \newtcolorbox[auto counter]{problem}[1][]{%
     enhanced,
     breakable,
@@ -96,6 +96,8 @@ We introduce basic graph theory concepts and briefly overview the results used i
 
 \subsection{Signal processing on graphs}
 
+
+
 We consider a weighted undirected graph $ \G = (\V, \E, \mathcal{W}) $,
 where $ \V \subset \R^N $ is the set of vertices, $ \E \subset \R^M $ is the set of edges, and $ \mathcal{W}
 : \V \times \mathcal{V} \to \R$ is a weight function. The weight function can be
@@ -109,6 +111,13 @@ $W_{i,j} =
 $,
 and for our needs, we assume $ W $ to be symmetric, that is $ W_{i,j} =  W_{j,i} $.
 
+
+\todo{Remove one legend, make tighter}
+\begin{wrapfigure}{r}{8cm}
+  \caption{Filtering signal on graphs.} 
+  \includegraphics[width=8cm]{assets/printed_graphs.pdf}
+\end{wrapfigure}
+
 In the study of signal processing on graph, we model the idea of sending a signal to a node as
 assigning a value to a vertex with a function $ s : \V \to \R$, whose values can be represented as a vector
 $ s = s(\V) = [s_1, \dots, s_N] \in \R^N $ where each entry $ s_i \defeq s(v_i)$ represents
@@ -120,6 +129,8 @@ In this setting, we introduce the graph Laplacian $\L$ defined as
 $ \L = D - W$, where $D $ is the diagonal degree matrix with entries  $D_{ii} = d(i)$. By
 construction, $\L^T = \mathcal{L}$, thus the Lanczos method can be safely applied to our 
 problem.
+
+
 
 \begin{remark}
   The Laplacian $\L$ is symmetric and semi-definite (it is diagonally dominant), hence by the
@@ -152,13 +163,14 @@ work.
 \end{remark}
 
 In this work, we will restrict ourself to two graph models: Erdős-Rényi and Sensor graphs. We shall
-define them as the current implementation in Library \ref{pygsp} 
+define them as the current implementation in Library \cite{pygsp} 
 \begin{definition}[Erdős-Rényi graph]
-  We define Erdős-Rényi graph $ \G_{N,p} $, where $ N $ is the number of nodes, and $ p $ the
-  probability of connecting a node with another one, as the graph constructed by randomly connecting
-  nodes, where each edge included in the graph with probability $ p $, independently from any other edge.
+  \label{def:ER}
+  We define the Erdős-Rényi graph $ \G_{N,p} $ with $ N $ nodes, and probability $ p $, as the graph
+  constructed by randomly connecting two nodes independently from any other edge, with probability $ p $.
 \end{definition}
 \begin{definition}[Sensor graph]
+  \label{def:Sensor}
   A sensor graph $ \G_N $ is the graph constructed by picking $ N $ points on the square $ \left[
   0,1 \right] \times \left[ 0,1 \right] $ and connecting each point with edges using $ k $ nearest
   neighbors.
@@ -173,6 +185,7 @@ define them as the current implementation in Library \ref{pygsp}
 \end{remark}
 
 AD Laplacian properties
+
 
 \subsection{The Lanczos method}
 
@@ -218,17 +231,11 @@ the Arnoldi relation takes the form:
  g(\L)s \approx  V_M \norm{s}_2 g(T_M) e_1 \eqdef g_M. \label{eq:projection}
 \end{equation}
 \end{proposition}
-Numerically, we compute the eigendecomposition $ (\Lambda,U) $ from $ T $, and then project $ g(T_M)
-= Ug(\Lambda)U^{\top} $ using the equation above.
+Numerically, we compute the eigendecomposition $ (\Lambda,U) $ from $ T $, and then project $ g(T_M) = Ug(\Lambda)U^{\top} $ using the equation above.
 
 
-In order to decide when we reached a good approximation of the matrix function, we define the
-following erros:
-\begin{definition}(Errors)
-  We define the Lanczos iteration error as $\norm{g_{M+j} - g_M}_2 $, where $ j $ is small, and the true
-error as $ \norm{e_M} = \norm{g(\L)s - g_M} $.
-\end{definition}
 \subsection{Algorithm}
+\label{ssec:algo}
 
 In floating point arithmetic the basis $ V $ stops being orthogonal, and orthogonalizing
 the incoming vector $ w $ only against $ v_j,v_{j-1} $ is not sufficient anymore: we need to apply
@@ -245,7 +252,6 @@ $, where $ g(T_M) $ is computed by diagonalizing $ T_M $: because $ T_M $ is sym
 computing its eigendecomposition is stable and efficient. \todo{why? cost?}
 
 
-\todo{No FOM but next step error}
 \begin{algorithm}[ht!]
   \caption{Lanczos method in floating point arithmetic.}
   \label{alg:lanczos}
@@ -274,20 +280,19 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
     \State $ \beta_j = \|w\|_2 $
     \If{$ \beta_j = 0 $}
       \State 
-      \Return $ V_j(:,1:j), \alpha_j(1:j), \beta_j(1:j-1) $
+      \Return $ V_j, \alpha, \beta $
       \Comment{--- Breakdown ---}
     \Else
-      \If{$ \|r_j^{\text{FOM}}\|_2 =  \mid b_j\mid \cdot \mid e_j^{\top}y_j^{\text{FOM}} \mid <
-      \varepsilon_{\text{FOM}}$}
+      \If{$ \| g_j - g_{j-3}\|_2  < \varepsilon$}
       \State 
-      \Return $ V_j(:,1:j), \alpha_j(1:j), \beta_j(1:j-1) $
+      \Return $ V_j, \alpha, \beta $
       \Comment{--- Breakdown ---}
       \EndIf
       \State $ v_{j+1} = \frac{w}{\beta_j} $
     \EndIf
     \EndIf
     \EndFor
-    \State \Return $ V_M, \alpha_M, \beta_M $.
+    \State \Return $ V_M, \alpha, \beta $.
   \end{algorithmic}
   
 \end{algorithm}
@@ -299,9 +304,9 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
     \State \textbf{Input:} Function $ g $, Matrix $ T $, signal $ s $.
     \State $ \Lambda, U \leftarrow $ diagonalize($ T $)  \Comment{Here $ \Lambda $ is the vector of
     eigenvalues.}
-    \State $y = \|s\| U (\text{Diag}(g(\Lambda)) U^{\top})e_1 = \|s\| U (g(\Lambda) \odot
-    (U^{\top})_{:,1})$
-    \State \Comment{We denote with $ u \odot v $ the element-wise product between
+    \State $ u_1 \leftarrow  (U^{\top})_{:,1}$
+    \State $y \leftarrow \|s\| U (\text{Diag}(g(\Lambda)) U^{\top})e_1 = \|s\| U (g(\Lambda) \odot u_1)$
+    \State \Comment{Here $ u \odot v $ denotes the element-wise product between
   two vectors $ u $ and $ v $.}
     \State \Return $ Vy $
   \end{algorithmic}
@@ -324,7 +329,8 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
   + M \cdot \text{nnz}(A)) $ for a sparse matrix \footnote{note that the product $ Av_j $ dominates the cost,
   and that $ \text{nnz}(A) = N^2 $ when $ A $ is dense.}. With full orthogonalization, computing $ w = w -
   \sum_{i=1}^j v_i(v_i^{\top}w) $ can cost up
-  to $ O(M\cdot N) $, thus the total cost becomes $ O(M^2N +  M\cdot \text{nnz}(A)) $. \todo{cost of computing FOM} While it is an efficient
+  to $ O(M\cdot N) $, thus the total cost becomes $ O(M^2N +  M\cdot \text{nnz}(A)) $. \todo{cost of
+  computing STEP ER} While it is an efficient
   method for small $ M\ll N $ for computing the basis of a Krylov subspace, it has a significant $ O(M \cdot N) $ memory cost for storing $ V_M $.
 \end{remark}
 
@@ -334,86 +340,110 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
   From the experimental setting in Section \ref{ssec:ex1}, we observed that the orthogonality of the
   basis $ V $ with Arnoldi was worse than Lanczos basis. Double orthogonalization showed good
   results. One reason could be that the Laplacian matrices that we are considering are badly
-  conditioned. The following example motivates this choice: \todo{Add example}
-  example:
-  \\
-  \ldots \\
-  \\
-  For efficiency, we decided to implement Lanczos with double orthogonalization instead of the Arnoldi
-  counterpart.
+  conditioned. The following example motivates this choice:
+\begin{example}
+    
+We consider a ER graph with $ N = 1000,M=200, p=0.04 $.
+The associated Laplacian $ \L $ is terribely conditioned, indeed $ k_2(\L) = 2.365029616834158 \times 10^{17} $:
+  \input{assets/orthogonalization.tex}
+
+  \end{example}
+  As we can observe in Table \ref{table:orthog}, orthogonalizing two times against the previous
+  basis vectors, yelds to a better orthogonal basis $ V$, while a single iteration here performs worse than standard Lanczos.
 
 
 \section{Experiments}
 
-\subsection{Comparing global error with projection error \todo{check error names}}
+In the following section we use some sample Erdős-Rényi and Sensor graphs, as defined in Definitions
+\ref{def:ER} and \ref{def:Sensor}, to study Lanczos algorithm accuracy and performance.
+
+
+\subsection{Comparing global error with projection error}
 \label{ssec:ex1}
 
+The scope of this experiment is verifying numerically the approximation in Equation
+\eqref{eq:projection}. We will do it by comparing the following residuals:
+\begin{definition}(Errors)
+  We define the Lanczos \emph{iteration error} as $\norm{g_{M+j} - g_M}_2 $, where $ j $ is small,
+  and the \emph{true error} as $ \norm{e_M}_2 = \norm{g(\L)s - g_M}_2 $.
+\end{definition}
 
-The scope of this experiment is verifying numerically equation \eqref{eq:projection}
+Here $ g(\L)s $ will be the ground truth for the evaluation, which is done by computing the Fourier
+basis for the graph $ \G $, which feasible for small graphs. Thus we set the graph size $ N = 500 $
+and the maximum subspace size $ M = 200 $. When we'll use Erdős-Rényi graphs, we'll set $ p = 0.04 $.
+We try to replicate the Experiment 1 in Article \cite{susnjara2015}. As filterbank \todo{Definition?}, we consider the function $ g(t)
+= \sin(\frac{1}{2}\pi \cos^2(\pi t)) \chi_{\left[ -\frac{1}{2}, \frac{1}{2} \right]}$. We adapt this
+function to the graph spectrum, using the \texttt{Itersine} class in Pygsp, which we plot in Figure
+\ref{fig:itersine}. Sadly, the autors in the paper apply another transformation to this function
+called \emph{filter warp}, which we weren't able to reproduce as it was not documented, both in the article and library.
 
-Studiamo i grafi di Erdos-Reiny e di tipo Sensors. Dal plot possiamo 
-Figura (dida: Grafi di ER e sensor colorati in base al segnale (non filtrato, sopra) e filtrato
-attraverso la valutazione $g(\L)s$.
-test
+\begin{figure}[ht!]
+  \label{fig:itersine}
+  \centering
+  \caption{Itersine plot.} 
+  \includegraphics[width=1.0\textwidth]{assets/itersine_comparison.pdf}
+\end{figure}
 
+Using the algorithm described in Section \ref{ssec:algo}, and computing the errors for $ j = 1\ldots
+M $, we obtain the plot in Figure \ref{fig:ex1_estimate}:
 
-\subsubsection{Problems encountered with filtering}
+\begin{figure}[ht!]
+  \label{fig:ex1_estimate}
+  \centering
+  \includegraphics[width=1.0\textwidth]{assets/ex1_estimate.pdf}
+  \caption{Comparing iteration error with true error.}
+\end{figure}
 
-In the article, the autors mention that they adapt the filter window to the graph spectrum, however 
-From the experimentation we observed that we need to adapt the filter function as follows:
-
-\begin{tikzpicture}
-\begin{axis}[
-    % Size parameters suitable for standard 2-column IEEE/Springer papers
-    width=8cm,          
-    height=5.5cm,         
-    axis lines=middle,  
-    xlabel={$t$},
-    ylabel={$f(t)$},
-    xmin=-1.2, xmax=1.2,
-    ymin=-0.2, ymax=1.2,
-    % Clean fractional ticks
-    xtick={-1, -0.5, 0, 0.5, 1},
-    xticklabels={$-1$, $-\frac{1}{2}$, $0$, $\frac{1}{2}$, $1$},
-    ytick={0, 1},
-    ticklabel style={font=\footnotesize},
-    xlabel style={anchor=west},
-    ylabel style={anchor=south},
-    enlargelimits=false,
-    % Define the function natively. 
-    % Note: pgfplots evaluates trig functions in degrees by default.
-    % 1/2 pi rad = 90 deg; pi*t rad = 180*t deg.
-    declare function={
-        f(\t) = (abs(\t) <= 0.5) * sin(90 * (cos(180*\t))^2);
-    }
-]
-
-\addplot [
-    domain=-1.2:1.2,
-    samples=300,        % High sample count for smooth paper-quality rendering
-    thick,
-    blue!80!black       % Professional dark blue (prints better than pure blue)
-] {f(x)};
-
-\end{axis}
-\end{tikzpicture}
+Let's analyze Figure \ref{fig:ex1_estimate}: we immediately observe that the error curves are
+closely tight, and that their value is decreasing, which means that the approximation gains
+precision as the basis $ V $ gets larger. We also see how the eigenvalues of $ \L $ and $ T $
+influence the steepness and smoothness of the curves. Indeed, when eigenvalues fall outside $
+[-\frac{1}{2}, \frac{1}{2}] $, we see that the curves fastly reach machine precision: this is
+unfortunately caused by the itersine not perfectly matching the spectrum distribution. We also
+observe evident lack of smoothness in the iteration error curve. We believe that due the
+irregularity of $ g(t) $ in $ t \in \{  -\frac{1}{2}, \frac{1}{2} \}$, the eigenvalues of $ T $ tend
+to jump in and out the interval $ [-\frac{1}{2}, \frac{1}{2}] $, causing spikes.
+\todo{I'm not really sure about this.}
 
 \subsection{Performance comparison for Erdős-Rényi graphs}
 
-\begin{center}
-  \label{table:ex23}
-  \begin{table}
+In this experiemnt, we will study the performance correlation for running Lanczos on Erdős-Rényi
+graphs $ \G(N,p) $, comparing time data when only $ N $ varies and when only $ p $ varies
+\todo{What's the motivation for this test?}.
+We choose $ \varepsilon = 10^{-5} $, as we observed that smaller thresholds rarely triggered full
+orthogonalization. As described in Algorithm \ref{alg:lanczos} our stopping criteria happens when $ \|g_j - g_{j-3}\|_2 < \epsilon $, at the step $
+j$. \footnote{Here
+index goes backwards because matrix $ T_l $ would not be defined for $ l>j $ at iteration $ j $!}
+In the following experiment, we choose generate two sample datasets, letting $ n = 6 $,:
+\begin{enumerate}
+  \item $ N $ varies in $ \{ 50,100,\dots,2^n \cdot 50\} $, $ p = 0.04 $.
+  \item $ p $ varies in $ \{ 0.01,0.02,\dots,2^n \cdot 0.01 \}$, $ N = 1000$.
+\end{enumerate}
+We repeat the generation of these graphs $ 400 $ times to avoid graph randomness biasing our results.
+For time telemetry, we adopt Python's \texttt{time.perf\_monitor()} which ensures precise
+measurement. When measuring time, first the algorithm runs without orthogonalization, and if full
+orthogonalization is triggered, it is taken in the total measurement. From Table
+\ref{table:ex23_some} shows that for some cases, we can't just blindlessy enforce full
+orthogonalization, but we run it when we detect orthogonality loss.
+\begin{table}[ht!]
+  \centering
   \caption{Lanczos execution tests when $ N $ varies and $ p $ fixed (top), and 
-  vice versa (bottom). In both cases $ \varepsilon $ stays the same.}
+  vice versa (bottom).}
+  \label{table:ex23_some}
   \input{assets/table_ex_2.tex}
   \input{assets/table_ex_3.tex}
-  \end{table}
-\end{center}
+\end{table}
 
-\begin{figure}
-  \caption{Log-log plot of four iteration of the results in Table \ref{table:ex23}} 
+After executing the experiments above, we obtain the plot in Figure \ref{fig:loglog}.
+\todo{CHANGE FIG AND FIX wrong figure numbers.}
+
+\begin{figure}[ht!]
+  \label{fig:loglog}
+  \centering
+  \caption{Log-log plot of four iteration of the results in Table AVG TABLE} 
   \includegraphics[width=0.6\textwidth]{assets/correlation_23.pdf}
 \end{figure}
+
 
 \section{Conclusions \& future work}
 
