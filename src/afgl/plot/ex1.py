@@ -53,6 +53,7 @@ def plot_graphs(
 
     # Prevent label/title overlap
     plt.savefig("./out/printed_graphs.pdf", bbox_inches="tight")
+    plt.close(fig)
 
 
 def plot_error_comparison(
@@ -86,3 +87,4 @@ def plot_error_comparison(
     plt.tight_layout()
 
     plt.savefig("./out/ex1_estimate.pdf", bbox_inches="tight")
+    plt.close(fig)
