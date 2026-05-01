@@ -1,11 +1,25 @@
+from typing import Any, List, Optional, Tuple, Union
+
 import numpy as np
 import numpy.linalg as LA
+import scipy.sparse as sp
 
 from afgl.util.g_function import compute_g_M
 from afgl.util.T_tridiag import T_tridiag
 
 
-def full_orthogonalization(V, w, j):
+def full_orthogonalization(V: np.ndarray, w: np.ndarray, j: int) -> np.ndarray:
+    """
+    Performs full re-orthogonalization using the double Gram-Schmidt process.
+
+    Args:
+        V: Matrix of basis vectors.
+        w: Vector to orthogonalize.
+        j: Current iteration index.
+
+    Returns:
+        Orthogonalized vector w.
+    """
     for _ in range(2):
         # Remember that numpy slicing is not inclusive, thus mathematically we are
         # considering the submatrix V(:,0:j)
@@ -14,14 +28,56 @@ def full_orthogonalization(V, w, j):
     return w
 
 
-def classic_orthogonalization(V, w, alp, beta, j):
+def classic_orthogonalization(
+    V: np.ndarray, w: np.ndarray, alp: np.ndarray, beta: np.ndarray, j: int
+) -> np.ndarray:
+    """
+    Performs classic Lanczos orthogonalization against the last two basis vectors.
+
+    Args:
+        V: Matrix of basis vectors.
+        w: Vector to orthogonalize.
+        alp: Array of diagonal elements alpha.
+        beta: Array of off-diagonal elements beta.
+        j: Current iteration index.
+
+    Returns:
+        Orthogonalized vector w.
+    """
     w = w - alp[j] * V[:, j]
     if j > 0:
         w = w - beta[j - 1] * V[:, j - 1]
     return w
 
 
-def lanczos_iteration(L, s, M, g, full_ortho, eps_STOP=None):
+def lanczos_iteration(
+    L: Union[np.ndarray, sp.spmatrix],
+    s: np.ndarray,
+    M: int,
+    g: Optional[Any],
+    full_ortho: bool,
+    eps_STOP: Optional[float] = None,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, str, int]:
+    """
+    Performs the Lanczos iteration process.
+
+    Args:
+        L: Symmetric input matrix (dense or sparse).
+        s: Starting vector.
+        M: Number of iterations.
+        g: Function to evaluate for stopping criteria.
+        full_ortho: Whether to use full re-orthogonalization.
+        eps_STOP: Tolerance for the stopping criterion.
+
+    Returns:
+        V: Matrix of basis vectors.
+        alp: Diagonal elements of the tridiagonal matrix.
+        beta: Off-diagonal elements of the tridiagonal matrix.
+        break_reason: String describing why the iteration stopped.
+        j: Number of iterations completed.
+    """
+    if sp.issparse(L):
+        L = L.tocsr()
     N = len(s)
     alp = np.zeros(M)
     beta = np.zeros(M - 1)
@@ -30,6 +86,7 @@ def lanczos_iteration(L, s, M, g, full_ortho, eps_STOP=None):
 
     break_reason = "No"
 
+    j = 0
     for j in range(M):
         w = L @ V[:, j]
         alp[j] = np.dot(V[:, j], w)
@@ -63,74 +120,31 @@ def lanczos_iteration(L, s, M, g, full_ortho, eps_STOP=None):
     return V, alp, beta, break_reason, j
 
 
-def Arnoldi(A, s, m):
-    v = s
-    beta = LA.norm(v)
-    v = v / beta
-    H = np.zeros((m + 1, m))
-    V = np.zeros((A.shape[0], m + 1))
-    V[:, 0] = v
+def lanczos(
+    L: Union[np.ndarray, sp.spmatrix],
+    s: np.ndarray,
+    M: int,
+    g: Optional[Any] = None,
+    eps_STOP: Optional[float] = None,
+) -> Tuple[np.ndarray, np.ndarray, List[Any]]:
+    r"""
+    Lanczos extended method with optional re-orthogonalization.
 
-    for j in range(m):
-        w1 = A @ V[:, j]
+    Args:
+        L: Real valued NxN symmetric matrix (dense or sparse).
+        s: Starting vector of size N.
+        M: Target basis size.
+        g: Optional function to evaluate for stopping.
+        eps_STOP: Optional tolerance for stopping when ||g_{M+j} - g_{M}|| < eps_STOP.
 
-        # First orthogonalization pass
-        h1 = V[:, : j + 1].T @ w1
-        w1 = w1 - V[:, : j + 1] @ h1
-        norm_w1 = LA.norm(w1)
-
-        # Temporary normalization
-        v_tmp = w1 / norm_w1
-
-        # Second orthogonalization pass
-        h2 = V[:, : j + 1].T @ v_tmp
-        w2 = v_tmp - V[:, : j + 1] @ h2
-        norm_w2 = LA.norm(w2)
-
-        # Matrix H coefficients
-        H[: j + 1, j] = h1 + h2
-        H[j + 1, j] = norm_w1 * norm_w2
-
-        if H[j + 1, j] == 0:
-            print("Arnoldi breakdown")
-            m = j
-            break
-        else:
-            if j < m - 1:
-                V[:, j + 1] = w2 / norm_w2
-
-    epsilon = np.finfo(H.dtype).eps
-    print(epsilon)
-    H[np.abs(H) < epsilon] = 0
-
-    return V[:, : j + 1], H[: j + 1, : j + 1]
-
-
-def lanczos(L, s, M, g=None, eps_STOP=None):
-    """
-    Lanczos extended method that calls re-orthogonalization when || V^T*V - I||
-    < EPS_ORTHO.
-
-    Arguments
-    L : Real valued NxN symmetric matrix
-    s : vector of size N
-    M : natural number indicating basis size
-    g : itersine function to evaluate for stopping
-    eps_STOP: When passed float value, Lanczos method stops when \|g_{M+j} -
-    g_{M}\| < eps_STOP.
-
-    Returns
-    -------
-    V : ndarray
-        M-dimensional vector with orthonormal columns.
-    alp : ndarray
-        M-dimensional array of scalars.
-    beta : ndarray
-        M-dimensional array of scalars.
+    Returns:
+        V: Matrix with orthonormal columns forming the basis.
+        T: Tridiagonal matrix.
+        info: List containing [full_ortho_used, break_reason, iterations_completed].
     """
     full_ortho = False
-
     EPS_ORTHO = 10e-10
+
     V, alp, beta, break_reason, j = lanczos_iteration(L, s, M, g, False, eps_STOP)
 
     # Check basis orthogonality
