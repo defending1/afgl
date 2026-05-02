@@ -22,21 +22,21 @@ class Ex23:
         results_ex2 = self.run_ex_2()
         results_ex3 = self.run_ex_3()
 
-        df_ex2 = pd.DataFrame(results_ex2)
-        df_ex3 = pd.DataFrame(results_ex3)
+        df2 = pd.DataFrame(results_ex2)
+        df3 = pd.DataFrame(results_ex3)
 
-        self.save_to_latex(df_ex2, 2)
-        self.save_to_latex(df_ex3, 3)
+        self.save_to_latex(df2, 2)
+        self.save_to_latex(df3, 3)
 
-        combined_df = pd.concat([df_ex2["Time 2"], df_ex3["Time 3"]], axis=1)
+        print(df2)
 
-        print(combined_df)
+        df2.attrs["n"] = self.n
+        df2.attrs["times"] = self.times
+        df2.to_pickle(self.out_dir / "df2.pkl")
 
-        combined_df.attrs["n"] = self.n
-        combined_df.attrs["times"] = self.times
-        combined_df.to_pickle(self.out_dir / "ex_23.pkl")
-
-        return combined_df
+        df3.attrs["n"] = self.n
+        df3.attrs["times"] = self.times
+        df3.to_pickle(self.out_dir / "df3.pkl")
 
     def _perform_iteration(
         self, N: int, M: int, p: float, ex_num: int
@@ -63,7 +63,7 @@ class Ex23:
         g = compute_g_itersine(G)
 
         # Lanczos method
-        eps = 1e-3
+        eps = 10e-6
 
         start = time.perf_counter()
         _, _, debug = lanczos(L, s, M, g, eps)
@@ -73,12 +73,21 @@ class Ex23:
             "$N$": N,
             "$M$": M,
             "$p$": p,
-            f"Time {ex_num}": end - start,
+            "Time": end - start,
             "Orthogonalization": "Full" if debug[0] else "Partial",
             "Breakdown": debug[1],
             "Stopping index": debug[2],
             "$\\varepsilon$": eps,
         }
+
+    def print_group_table(self):
+        index = ["$N$", "$M$", "$p$", "Time", "Stopping index"]
+        df2 = pd.read_pickle("./out/df2.pkl")
+        df3 = pd.read_pickle("./out/df3.pkl")
+
+        df3 = df3[index]
+        df2[index].groupby(["$N$"]).mean().to_latex(self.out_dir / "group_table_2.tex")
+        df3[index].groupby(["$p$"]).mean().to_latex(self.out_dir / "group_table_3.tex")
 
     def save_to_latex(self, df: pd.DataFrame, ex_num: int) -> None:
         """Save DataFrame to a LaTeX table."""
@@ -89,7 +98,7 @@ class Ex23:
         """Experiment 2: Increasing graph size N, fixed p and M."""
         p = 0.04
         M = 200
-        N_values = 250 * (2 ** np.arange(self.n))
+        N_values = 50 * (2 ** np.arange(self.n))
 
         results = []
         for _ in range(self.times):
