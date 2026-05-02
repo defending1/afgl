@@ -8,7 +8,9 @@ from afgl.util.g_function import compute_g_M
 from afgl.util.T_tridiag import T_tridiag
 
 
-def full_orthogonalization(V: np.ndarray, w: np.ndarray, j: int) -> np.ndarray:
+def full_orthogonalization(
+    V: np.ndarray, w: np.ndarray, j: int, gs_iterations=2
+) -> np.ndarray:
     """
     Performs full re-orthogonalization using the double Gram-Schmidt process.
 
@@ -16,11 +18,12 @@ def full_orthogonalization(V: np.ndarray, w: np.ndarray, j: int) -> np.ndarray:
         V: Matrix of basis vectors.
         w: Vector to orthogonalize.
         j: Current iteration index.
+        gs_iterations: Number of grahm-schmidt iterations (2 for safety)
 
     Returns:
         Orthogonalized vector w.
     """
-    for _ in range(2):
+    for _ in range(gs_iterations):
         # Remember that numpy slicing is not inclusive, thus mathematically we are
         # considering the submatrix V(:,0:j)
         w = w - V[:, : j + 1] @ (V[:, : j + 1].T @ w)
@@ -57,6 +60,7 @@ def lanczos_iteration(
     g: Optional[Any],
     full_ortho: bool,
     eps_STOP: Optional[float] = None,
+    gs_iterations=2,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, str, int]:
     """
     Performs the Lanczos iteration process.
@@ -92,7 +96,7 @@ def lanczos_iteration(
         alp[j] = np.dot(V[:, j], w)
 
         if full_ortho:
-            w = full_orthogonalization(V, w, j)
+            w = full_orthogonalization(V, w, j, gs_iterations)
         else:
             w = classic_orthogonalization(V, w, alp, beta, j)
 
@@ -111,7 +115,7 @@ def lanczos_iteration(
                     g_j = compute_g_M(V[:, : j + 1], T[: j + 1, : j + 1], s, g)
                     r_j = LA.norm(g_j - g_j3)
 
-                    if r_j < eps_STOP * LA.norm(s):
+                    if r_j < eps_STOP:
                         break_reason = "Bound"
                         return V[:, : j + 1], alp[: j + 1], beta[:j], break_reason, j
 
@@ -126,6 +130,8 @@ def lanczos(
     M: int,
     g: Optional[Any] = None,
     eps_STOP: Optional[float] = None,
+    full_orthogonalization=False,
+    gs_iterations=2,
 ) -> Tuple[np.ndarray, np.ndarray, List[Any]]:
     r"""
     Lanczos extended method with optional re-orthogonalization.
@@ -142,16 +148,26 @@ def lanczos(
         T: Tridiagonal matrix.
         info: List containing [full_ortho_used, break_reason, iterations_completed].
     """
-    full_ortho = False
+    full_ortho_triggered = False
     EPS_ORTHO = 10e-10
 
-    V, alp, beta, break_reason, j = lanczos_iteration(L, s, M, g, False, eps_STOP)
+    if not full_orthogonalization:
+        V, alp, beta, break_reason, j = lanczos_iteration(
+            L, s, M, g, False, eps_STOP, gs_iterations
+        )
+        # Check basis orthogonality
+        Id = np.eye(len(alp))
 
-    # Check basis orthogonality
-    Id = np.eye(len(alp))
-    if LA.norm(V.T @ V - Id) > EPS_ORTHO:
-        V, alp, beta, break_reason, j = lanczos_iteration(L, s, M, g, True, eps_STOP)
-        full_ortho = True
+        if LA.norm(V.T @ V - Id) > EPS_ORTHO:
+            V, alp, beta, break_reason, j = lanczos_iteration(
+                L, s, M, g, True, eps_STOP, gs_iterations
+            )
+            full_ortho_triggered = True
+    else:
+        V, alp, beta, break_reason, j = lanczos_iteration(
+            L, s, M, g, True, eps_STOP, gs_iterations
+        )
+        full_ortho_triggered = True
 
     T = T_tridiag(alp, beta)
-    return V, T, [full_ortho, break_reason, j]
+    return V, T, [full_ortho_triggered, break_reason, j]
