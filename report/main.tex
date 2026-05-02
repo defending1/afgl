@@ -253,15 +253,16 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
 
 
 \begin{algorithm}[ht!]
-  \caption{Lanczos method in floating point arithmetic.}
+  \caption{Modified Lanczos method in floating point arithmetic.}
   \label{alg:lanczos}
   \begin{algorithmic}
     \State \textbf{Input:} Symmetric matrix $ A \in \R^{N\times N}$, vector $ b \in R^N $, $ M \in
-    \N $.
+    \N $, and $ g $ function.
     \State \textbf{Output: } Basis matrix $ V_l = \left[ v_1,\dots,v_l \right] \in R^{N \times l} $ for $ K_l(A,b) $, vectors $
     \alpha =\left\{ \alpha_1,\dots,\alpha_l \right\} \in \R^l, \beta=\left[ \beta_1,\dots,\beta_{l-1} \right] \in \R^{l-1} $, where $ l \in
     \{ 1,\dots,M \}$ is the stopping iteration index.
-
+    \State Initialize $ V \leftarrow \mathbf{0}^{N \times M} $ , $ \alpha \leftarrow \mathbf{0}^N $,
+    and $ \beta \leftarrow \mathbf{0}^{N-1}$
 
     \For{$ j = 1, \dots, M-1 $}
     \State $ w \leftarrow Av_j  $
@@ -280,7 +281,7 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
     \State $ \beta_j = \|w\|_2 $
     \If{$ \beta_j = 0 $}
       \State 
-      \Return $ V_j, \alpha, \beta $
+      \Return $ V_j, \alpha_{1:j}, \beta_{1:j-1} $
       \Comment{--- Breakdown ---}
     \Else
       \If{$ \| g_j - g_{j-3}\|_2  < \varepsilon$}
@@ -292,7 +293,7 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
     \EndIf
     \EndIf
     \EndFor
-    \State \Return $ V_M, \alpha, \beta $.
+    \State \Return $ V_M, \alpha_{1:M}, \beta_{1:M-1} $.
   \end{algorithmic}
   
 \end{algorithm}
@@ -302,10 +303,10 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
   \label{alg:g_evaluation}
   \begin{algorithmic}
     \State \textbf{Input:} Function $ g $, Matrix $ T $, signal $ s $.
-    \State $ \Lambda, U \leftarrow $ diagonalize($ T $)  \Comment{Here $ \Lambda $ is the vector of
+    \State $ \lambda, U \leftarrow $ diagonalize($ T $)  \Comment{Here $ \lambda $ is the vector of
     eigenvalues.}
     \State $ u_1 \leftarrow  (U^{\top})_{:,1}$
-    \State $y \leftarrow \|s\| U (\text{Diag}(g(\Lambda)) U^{\top})e_1 = \|s\| U (g(\Lambda) \odot u_1)$
+    \State $y \leftarrow \|s\| U (\text{Diag}(g(\lambda)) U^{\top})e_1 = \|s\| U (g(\lambda) \odot u_1)$
     \State \Comment{Here $ u \odot v $ denotes the element-wise product between
   two vectors $ u $ and $ v $.}
     \State \Return $ Vy $
@@ -318,7 +319,7 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
   \begin{algorithmic}
     \State \textbf{Input:} Function $ g $, Graph $ \G $, signal $ s $.
     \State $ \Lambda,U \leftarrow \text{Fourier\_basis}( \G )$
-    \State \Return $ U \text{Diag}(g(\Lambda)) U^{\top}s $
+    \State \Return $ U g(\Lambda) U^{\top}s $
   \end{algorithmic}
   
 \end{algorithm}
@@ -352,46 +353,113 @@ The associated Laplacian $ \L $ is terribely conditioned, indeed $ k_2(\L) = 2.3
   basis vectors, yelds to a better orthogonal basis $ V$, while a single iteration here performs worse than standard Lanczos.
 
 
+\subsubsection{Comparing Lanczos with Arnoldi}
+
+Here we do a short comparison of Lanczos and Arnoldi with double orthogonalization. From the theory,
+we know that the former is faster than the latter, but wehaven't seen a practical comparison in
+class.
+
+We first introduce the Arnoldi algorithm with double orthogonalization in Algorithm \ref{alg:arnoldi_double_ortho}, as seen in class.
+
+\begin{algorithm}[ht!]
+  \caption{Arnoldi with double orthogonalization.}
+  \label{alg:arnoldi_double_ortho}
+  \begin{algorithmic}[1]
+    \State \textbf{Input:} Matrix $ A $, starting vector $ s $, maximum dimension $ M $, function $
+    g $, tolerance $ \varepsilon $.
+    \State $ v_1 \leftarrow s / \|s\|_2 $
+    \State Initialize $ V \leftarrow \mathbf{0}^{N \times (M+1)} $ and $ H \leftarrow \mathbf{0}^{(M+1) \times M} $
+    \State $ V_{:, 1} \leftarrow v_1 $
+    \For{$ j = 1 \dots M $}
+        \State $ w_1 \leftarrow A v_j $
+        \State \Comment{First orthogonalization}
+        \State $ h_1 \leftarrow V_j^\top w_1 $
+        \State $ w_1 \leftarrow w_1 - V_j \cdot h_1 $
+        \State $ v_{j+1} \leftarrow w_1 / \|w_1\|_2 $ 
+        
+        \State \Comment{Second orthogonalization pass}
+        \State $ h_2 \leftarrow V_j^\top v_{j+1} $
+        \State $ w_2 \leftarrow v_{j+1} - V_j \cdot h_2 $
+        \State $ H_{1:j, j} \leftarrow h_1 + h_2 $
+        \State $ H_{j+1, j} \leftarrow \|w_1\|_2 \|w_2\|_2 $\\
+        
+        \If{$ H_{j+1, j} = 0 $}
+            \State \textbf{break} \Comment{Arnoldi breakdown}
+        \EndIf
+        
+        \State \Comment{Convergence check}
+        \If{$ j > 3 $ \textbf{and} $ j < M $}
+            \If{$ \|g_j - g_{j-3}\|_2 < \varepsilon $}
+                \State \Return $ V_j, H_{1:j, 1:j}, j $
+            \EndIf
+        \EndIf
+        
+        \State $ v_{j+1} \leftarrow w_2 / \|w_2|_2 $
+        \State $ V_{:, j+1} \leftarrow v_{j+1} $
+    \EndFor
+    
+    \State Set elements of $ H $ with magnitude less than machine epsilon to $ 0 $
+    \State \Return $ V_{:, 1:j}, H_{1:j, 1:j}, j $
+  \end{algorithmic}
+\end{algorithm}
+
+We consider again function the function $ g $ used in the experiments and $ N \in \left\{ 300, 400,
+500, \dots, 3000\right\} $, $ M = 200 $ and $ p = 0.04 $. In Figure \ref{fig:avl} Lanczos
+outperforms Arnoldi, but curves follow a similar behaviour.
+
+\begin{figure}[ht!]
+  \centering
+  \caption{Comparing Lanczos and Arnoldi, both with double orthogonalization.} 
+  \includegraphics[width=0.8\textwidth]{assets/avl.pdf}
+  \label{fig:avl}
+\end{figure}
+
+In our implementation we tested that the matrix $ H $ returned by Arnoldi is tridiagonal (up to some small perturbations outside the diagonals) and
+symmetric (up to a small epsilon).
+
 \section{Experiments}
 
-In the following section we use some sample Erdős-Rényi and Sensor graphs, as defined in Definitions
-\ref{def:ER} and \ref{def:Sensor}, to study Lanczos algorithm accuracy and performance.
-
+In the following section we generate random Erdős-Rényi and Sensor graphs, as defined in Definitions
+\ref{def:ER} and \ref{def:Sensor}, to study Lanczos algorithm's accuracy and performance.
 
 \subsection{Comparing global error with projection error}
 \label{ssec:ex1}
 
-The scope of this experiment is verifying numerically the approximation in Equation
-\eqref{eq:projection}. We will do it by comparing the following residuals:
+Scope of this experiment is to numerically verify the approximation in Equation
+\eqref{eq:projection}. We will do it by relating the following residuals, which represent the
+algorithmic error and the ground truth $ g(\L) $.
+Let's recall some quantities that will be useful in this section: $ N $ is the number of graph
+nodes and size of the Laplacian $ \L $, $ M $ is the maximum size of the Krylov subspace, and $ p $
+the probability of the graph. In the following experiment we set $ (N,M,p) = (500,200,0.04) $.
+
 \begin{definition}(Errors)
   We define the Lanczos \emph{iteration error} as $\norm{g_{M+j} - g_M}_2 $, where $ j $ is small,
   and the \emph{true error} as $ \norm{e_M}_2 = \norm{g(\L)s - g_M}_2 $.
 \end{definition}
 
-Here $ g(\L)s $ will be the ground truth for the evaluation, which is done by computing the Fourier
-basis for the graph $ \G $, which feasible for small graphs. Thus we set the graph size $ N = 500 $
-and the maximum subspace size $ M = 200 $. When we'll use Erdős-Rényi graphs, we'll set $ p = 0.04 $.
-We try to replicate the Experiment 1 in Article \cite{susnjara2015}. As filterbank \todo{Definition?}, we consider the function $ g(t)
+Computing $ g(\L)s $ is done by computing the Fourier basis \footnote{In other
+words diagonalizing the laplacian} for the graph $ \G $, which feasible for the small graph we are
+considering. We try to replicate the Experiment 1 in Article \cite{susnjara2015}. As filterbank \todo{Definition?}, we consider the function $ g(t)
 = \sin(\frac{1}{2}\pi \cos^2(\pi t)) \chi_{\left[ -\frac{1}{2}, \frac{1}{2} \right]}$. We adapt this
 function to the graph spectrum, using the \texttt{Itersine} class in Pygsp, which we plot in Figure
 \ref{fig:itersine}. Sadly, the autors in the paper apply another transformation to this function
 called \emph{filter warp}, which we weren't able to reproduce as it was not documented, both in the article and library.
 
 \begin{figure}[ht!]
-  \label{fig:itersine}
   \centering
   \caption{Itersine plot.} 
   \includegraphics[width=1.0\textwidth]{assets/itersine_comparison.pdf}
+  \label{fig:itersine}
 \end{figure}
 
 Using the algorithm described in Section \ref{ssec:algo}, and computing the errors for $ j = 1\ldots
 M $, we obtain the plot in Figure \ref{fig:ex1_estimate}:
 
 \begin{figure}[ht!]
-  \label{fig:ex1_estimate}
   \centering
   \includegraphics[width=1.0\textwidth]{assets/ex1_estimate.pdf}
   \caption{Comparing iteration error with true error.}
+  \label{fig:ex1_estimate}
 \end{figure}
 
 Let's analyze Figure \ref{fig:ex1_estimate}: we immediately observe that the error curves are
@@ -438,9 +506,9 @@ After executing the experiments above, we obtain the plot in Figure \ref{fig:log
 \todo{CHANGE FIG AND FIX wrong figure numbers.}
 
 \begin{figure}[ht!]
-  \label{fig:loglog}
   \centering
   \caption{Log-log plot of four iteration of the results in Table AVG TABLE} 
+  \label{fig:loglog}
   \includegraphics[width=0.6\textwidth]{assets/correlation_23.pdf}
 \end{figure}
 
