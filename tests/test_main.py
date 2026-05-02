@@ -14,6 +14,32 @@ def is_sorted(a):
     return np.all(a[:-1] <= a[1:])
 
 
+def test_check_orthogonalization_trigger():
+    N = 1000
+    M = 200
+    p = 0.04
+    s = np.random.rand(N).astype(float)
+
+    G = graphs.ErdosRenyi(N, p)
+    G.compute_laplacian("combinatorial")
+    G.estimate_lmax()
+    L = G.L
+
+    print(f"$k_2(L)={LA.cond(L.toarray(), 2)}")
+    V, T, debug = lanczos(G.L, s, M, full_orthogonalization=False)
+    Id = np.eye(T.shape[0])
+    print(f"Partial orthogonalization {LA.norm(V.T @ V - Id)}")
+
+    V, T, debug = lanczos(G.L, s, M, full_orthogonalization=False, gs_iterations=1)
+    Id = np.eye(T.shape[0])
+    print(f"Single Gram-Schmidt orthogonalization {LA.norm(V.T @ V - Id)}")
+
+    V, T, debug = lanczos(G.L, s, M, full_orthogonalization=True, gs_iterations=2)
+    Id = np.eye(T.shape[0])
+    print(f"Double Gram-Schmidt orthogonalization {LA.norm(V.T @ V - Id)}")
+    assert False
+
+
 def test_if_T_is_symmetric():
     N = 1000
     M = 200
