@@ -2,7 +2,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as LA
 import pandas as pd
@@ -13,13 +12,20 @@ from afgl.util.lanczos import lanczos
 
 
 class Ex23:
-    def __init__(self, n: int, times: int, out_dir: str = "./out"):
-        self.n = n
+    def __init__(self, times: int, out_dir: str = "./out"):
+        self.n = 6
         self.times = times
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
-        cmap = plt.get_cmap("tab10")
-        self.colors = [cmap(i) for i in range(self.n)]
+        palette = [
+            "#000000",  # black
+            "#ff0000",  # red
+            "#0000ff",  # blue
+            "#00aa00",  # green
+            "#ff00ff",  # magenta
+            "#00ffff",  # cyan
+        ]
+        self.colors = [palette[i % len(palette)] for i in range(self.n)]
 
     def run(self) -> pd.DataFrame:
         results_ex2 = self.run_ex_2()

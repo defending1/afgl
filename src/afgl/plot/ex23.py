@@ -11,20 +11,8 @@ def plot_ex23():
     n_values = df2["$N$"]
     p_values = df3["$p$"]
 
-    palette = [
-        "#000000",  # black
-        "#ff0000",  # red
-        "#0000ff",  # blue
-        "#00aa00",  # green
-        "#ff00ff",  # magenta
-        "#00ffff",  # cyan
-        "#ffcc00",  # yellow
-    ]
     markers = ["o", "s", "^", "D", "v", "P", "X", "*"]
     unique_labels = pd.Index(color_labels).unique()
-    color_map = {
-        label: palette[idx % len(palette)] for idx, label in enumerate(unique_labels)
-    }
     marker_map = {
         label: markers[idx % len(markers)] for idx, label in enumerate(unique_labels)
     }
@@ -55,7 +43,7 @@ def plot_ex23():
                 marker=marker_map[label],
                 linestyle="",
                 alpha=0.8,
-                color=color_map[label],
+                color=label,
                 label=f"$({n_value},{p_value})$",
             )
 
