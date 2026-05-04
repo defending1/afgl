@@ -8,18 +8,25 @@ def plot_ex23():
     x = df2["Time"]
     y = df3["Time"]
     color_labels = df3["color"]
+    n_values = df2["$N$"]
+    p_values = df3["$p$"]
 
     palette = [
-        "#e41a1c",
-        "#377eb8",
-        "#4daf4a",
-        "#984ea3",
-        "#ff7f00",
-        "#ffff33",
+        "#000000",  # black
+        "#ff0000",  # red
+        "#0000ff",  # blue
+        "#00aa00",  # green
+        "#ff00ff",  # magenta
+        "#00ffff",  # cyan
+        "#ffcc00",  # yellow
     ]
+    markers = ["o", "s", "^", "D", "v", "P", "X", "*"]
     unique_labels = pd.Index(color_labels).unique()
     color_map = {
         label: palette[idx % len(palette)] for idx, label in enumerate(unique_labels)
+    }
+    marker_map = {
+        label: markers[idx % len(markers)] for idx, label in enumerate(unique_labels)
     }
 
     plt.rcParams.update(
@@ -37,18 +44,28 @@ def plot_ex23():
         # but figsize can still be explicitly declared if needed.
         fig, ax = plt.subplots(figsize=(8, 6))
 
-        # Plot data with label-based colors.
+        # Plot data with label-based colors and markers.
         for label in unique_labels:
             mask = color_labels == label
+            n_value = n_values.loc[mask].iloc[0]
+            p_value = p_values.loc[mask].iloc[0]
             ax.loglog(
                 x[mask],
                 y[mask],
-                marker="o",
+                marker=marker_map[label],
                 linestyle="",
                 alpha=0.8,
                 color=color_map[label],
-                label=str(label),
+                label=f"$({n_value},{p_value})$",
             )
+
+        ax.legend(
+            title="$(N,p)$",
+            loc="center left",
+            bbox_to_anchor=(1.02, 0.5),
+            ncol=1,
+            frameon=False,
+        )
 
         # Set labels and title
         ax.set_xlabel("Time [s] ($N$ varies)")
