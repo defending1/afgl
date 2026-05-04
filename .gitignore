@@ -44,3 +44,4 @@ Thumbs.db
 .vscode/
 	*.swp
 main.synctex(busy)
+	.agents/

@@ -398,7 +398,7 @@ We first introduce the Arnoldi algorithm with double orthogonalization in Algori
         \State $ V_{:, j+1} \leftarrow v_{j+1} $
     \EndFor
     
-    \State Set elements of $ H $ with magnitude less than machine epsilon to $ 0 $
+    \State Set elements of $ H $ smaller than machine epsilon to $ 0 $
     \State \Return $ V_{:, 1:j}, H_{1:j, 1:j}, j $
   \end{algorithmic}
 \end{algorithm}
@@ -409,7 +409,8 @@ outperforms Arnoldi, but curves follow a similar behaviour.
 
 \begin{figure}[ht!]
   \centering
-  \caption{Comparing Lanczos and Arnoldi, both with double orthogonalization.} 
+  \caption{Comparing Lanczos and Arnoldi, both with double orthogonalization. Both algorithm stop
+  when the threshold $ \varepsilon = 10^{-6} $ is met.} 
   \includegraphics[width=0.8\textwidth]{assets/avl.pdf}
   \label{fig:avl}
 \end{figure}
@@ -476,8 +477,8 @@ to jump in and out the interval $ [-\frac{1}{2}, \frac{1}{2}] $, causing spikes.
 \subsection{Performance comparison for Erdős-Rényi graphs}
 
 In this experiemnt, we will study the performance correlation for running Lanczos on Erdős-Rényi
-graphs $ \G(N,p) $, comparing time data when only $ N $ varies and when only $ p $ varies
-\todo{What's the motivation for this test?}.
+graphs $ \G(N,p) $, comparing time data when only $ N $ varies and when only $ p $ varies. We are
+interested in this because $ N $ and $ p $ determine the topology of the graph, thus the entries of $ \L $ and its eigenvalues.
 We choose $ \varepsilon = 10^{-5} $, as we observed that smaller thresholds rarely triggered full
 orthogonalization. As described in Algorithm \ref{alg:lanczos} our stopping criteria happens when $ \|g_j - g_{j-3}\|_2 < \epsilon $, at the step $
 j$. \footnote{Here
