@@ -2,6 +2,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as LA
 import pandas as pd
@@ -17,6 +18,8 @@ class Ex23:
         self.times = times
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
+        cmap = plt.get_cmap("tab10")
+        self.colors = [cmap(i) for i in range(self.n)]
 
     def run(self) -> pd.DataFrame:
         results_ex2 = self.run_ex_2()
@@ -39,7 +42,7 @@ class Ex23:
         df3.to_pickle(self.out_dir / "df3.pkl")
 
     def _perform_iteration(
-        self, N: int, M: int, p: float, ex_num: int
+        self, N: int, M: int, p: float, index: int, ex_num: int
     ) -> dict[str, Any]:
         """Perform a single Lanczos iteration on an Erdős-Rényi graph.
 
@@ -47,6 +50,7 @@ class Ex23:
             N: Number of nodes in the graph.
             M: Number of Lanczos iterations.
             p: Edge probability for the Erdős-Rényi graph.
+            index: current index for color.
             ex_num: Exercise number for result labeling.
 
         Returns:
@@ -78,16 +82,22 @@ class Ex23:
             "Breakdown": debug[1],
             "Stopping index": debug[2],
             "$\\varepsilon$": eps,
+            "color": self.colors[index],
         }
 
     def print_group_table(self):
         index = ["$N$", "$M$", "$p$", "Time", "Stopping index"]
         df2 = pd.read_pickle("./out/df2.pkl")
         df3 = pd.read_pickle("./out/df3.pkl")
+        df2.drop(columns=["color"])
+        df3.drop(columns=["color"])
 
-        df3 = df3[index]
-        df2[index].groupby(["$N$"]).mean().to_latex(self.out_dir / "group_table_2.tex")
-        df3[index].groupby(["$p$"]).mean().to_latex(self.out_dir / "group_table_3.tex")
+        df2[index].groupby(["$N$"]).agg("mean", "var").to_latex(
+            self.out_dir / "group_table_2.tex"
+        )
+        df3[index].groupby(["$p$"]).agg("mean", "var").to_latex(
+            self.out_dir / "group_table_3.tex"
+        )
 
     def save_to_latex(self, df: pd.DataFrame, ex_num: int) -> None:
         """Save DataFrame to a LaTeX table."""
@@ -103,7 +113,9 @@ class Ex23:
         results = []
         for _ in range(self.times):
             for N in N_values:
-                results.append(self._perform_iteration(N, M, p, ex_num=2))
+                results.append(
+                    self._perform_iteration(N, M, p, list(N_values).index(N), ex_num=2)
+                )
         return results
 
     def run_ex_3(self) -> list[dict[str, Any]]:
@@ -113,7 +125,9 @@ class Ex23:
         p_values = 0.01 * (2 ** np.arange(self.n))
 
         results = []
-        for _ in range(self.times):
+        for i in range(self.times):
             for p in p_values:
-                results.append(self._perform_iteration(N, M, p, ex_num=3))
+                results.append(
+                    self._perform_iteration(N, M, p, list(p_values).index(p), ex_num=3)
+                )
         return results
