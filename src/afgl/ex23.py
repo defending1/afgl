@@ -92,16 +92,18 @@ class Ex23:
         }
 
     def print_group_table(self):
-        index = ["$N$", "$M$", "$p$", "Time", "Stopping index"]
+        index = ["$N$", "$p$", "Time", "Stopping index"]
         df2 = pd.read_pickle("./out/df2.pkl")
         df3 = pd.read_pickle("./out/df3.pkl")
         df2.drop(columns=["color"])
         df3.drop(columns=["color"])
+        df2 = df2[index]
+        df3 = df3[index]
 
-        df2[index].groupby(["$N$"]).agg("mean", "var").to_latex(
+        df2.groupby(["$N$"]).agg(["mean", "var"]).to_latex(
             self.out_dir / "group_table_2.tex"
         )
-        df3[index].groupby(["$p$"]).agg("mean", "var").to_latex(
+        df3.groupby(["$p$"]).agg(["mean", "var"]).to_latex(
             self.out_dir / "group_table_3.tex"
         )
 
