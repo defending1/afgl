@@ -2,6 +2,31 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
+def plot_ex23_spy_grid():
+    """
+    Plots 6x2 spy grid of laplacians.
+    """
+    laplacians = pd.read_pickle("./out/laplacians.pkl")
+    panel_count = 12
+    fig, axes = plt.subplots(2, 6, figsize=(16, 6))
+    axes_flat = axes.ravel()
+
+    for idx in range(panel_count):
+        ax = axes_flat[idx]
+        entry = laplacians[idx]
+        ax.spy(entry["laplacian"], markersize=0.25)
+        ax.set_title(
+            f"$(N={entry['N']}, p={entry['p']:.3f})$",
+            fontsize=9,
+        )
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+    plt.tight_layout()
+    plt.savefig("./out/ex23_spy_grid.pdf", bbox_inches="tight")
+    plt.close()
+
+
 def plot_ex23():
     df2 = pd.read_pickle("./out/df2.pkl")
     df3 = pd.read_pickle("./out/df3.pkl")

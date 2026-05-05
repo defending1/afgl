@@ -17,6 +17,7 @@ class Ex23:
         self.times = times
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
+        self.laplacians: list[Any] = []
         palette = [
             "#000000",  # black
             "#ff0000",  # red
@@ -37,8 +38,6 @@ class Ex23:
         self.save_to_latex(df2, 2)
         self.save_to_latex(df3, 3)
 
-        print(df2)
-
         df2.attrs["n"] = self.n
         df2.attrs["times"] = self.times
         df2.to_pickle(self.out_dir / "df2.pkl")
@@ -46,6 +45,7 @@ class Ex23:
         df3.attrs["n"] = self.n
         df3.attrs["times"] = self.times
         df3.to_pickle(self.out_dir / "df3.pkl")
+        pd.to_pickle(self.laplacians, self.out_dir / "laplacians.pkl")
 
     def _perform_iteration(
         self, N: int, M: int, p: float, index: int, ex_num: int
@@ -69,6 +69,8 @@ class Ex23:
         G = graphs.ErdosRenyi(N, p)
         G.compute_laplacian("combinatorial")
         L = G.L
+        print(N, p)
+        self.laplacians.append({"laplacian": L, "N": N, "p": p})
 
         g = compute_g_itersine(G)
 
