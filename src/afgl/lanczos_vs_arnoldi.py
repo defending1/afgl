@@ -21,6 +21,16 @@ class LanczosVsArnoldi:
     def run(self) -> pd.DataFrame:
         results_ex2 = self.run_exp()
         df = pd.DataFrame(results_ex2)
+        stats_cols = [
+            col for col in df.columns if "time" in col.lower() or "index" in col.lower()
+        ]
+        stats_df = pd.DataFrame(
+            {
+                "mean": df[stats_cols].mean(),
+                "variance": df[stats_cols].var(),
+            }
+        )
+        stats_df.to_latex(self.out_dir / "lanczos_vs_arnoldi_stats.tex")
         plt.figure(figsize=(10, 6))  # set the figure size
         plt.plot(
             df["$N$"],
@@ -32,20 +42,30 @@ class LanczosVsArnoldi:
         )
         plt.plot(
             df["$N$"],
-            df["Time Lanczos"],
-            label="Time Lanczos",
+            df["Time Lanczos (full ortho)"],
+            label="Time Lanczos (full ortho)",
             color="red",
             linestyle="--",
             marker=".",
         )
 
+        plt.plot(
+            df["$N$"],
+            df["Time Lanczos (no ortho)"],
+            label="Time Lanczos (no ortho)",
+            color="green",
+            linestyle="dashdot",
+            marker=".",
+        )
+
         plt.xlabel("N", fontsize=16)
         plt.ylabel("Time", fontsize=16)
+        plt.yscale("log")
         # plt.title("Comparison ")
 
         plt.legend(fontsize=16)
         plt.grid(True)
-        plt.savefig("./out/avl.pdf", bbox_inches="tight")
+        plt.savefig("./out/lanczos_vs_arnoldi_plot.pdf", bbox_inches="tight")
         plt.close()
 
         return df
@@ -71,7 +91,11 @@ class LanczosVsArnoldi:
 
         g = compute_g_itersine(G)
 
-        eps = 10e-5
+        eps = 10e-6
+
+        start_Lno = time.perf_counter()
+        _, _, debug_Lno = lanczos(L, s, M, g, False, eps)
+        end_Lno = time.perf_counter()
 
         start_L = time.perf_counter()
         _, _, debug = lanczos(L, s, M, g, True, eps)
@@ -85,9 +109,11 @@ class LanczosVsArnoldi:
             "$N$": N,
             "$p$": p,
             "$M$": M,
-            "Time Lanczos": end_L - start_L,
+            "Time Lanczos (no ortho)": end_Lno - start_Lno,
+            "Time Lanczos (full ortho)": end_L - start_L,
             "Time Arnoldi": end_A - start_A,
-            "Stopping index Lanczos": debug[2],
+            "Stopping index Lanczos (no ortho)": debug_Lno[2],
+            "Stopping index Lanczos (full ortho)": debug[2],
             "Stopping index Arnoldi": j_A,
             "$\\varepsilon$": eps,
         }
