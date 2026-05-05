@@ -477,8 +477,11 @@ to jump in and out the interval $ [-\frac{1}{2}, \frac{1}{2}] $, causing spikes.
 \subsection{Performance comparison for Erdős-Rényi graphs}
 
 In this experiemnt, we will study the performance correlation for running Lanczos on Erdős-Rényi
-graphs $ \G(N,p) $, comparing time data when only $ N $ varies and when only $ p $ varies. We are
-interested in this because $ N $ and $ p $ determine the topology of the graph, thus the entries of $ \L $ and its eigenvalues.
+graphs $ \G(N,p) $, comparing time data when only $ N $ varies and when only $ p $ varies. In these
+graphs, $ N $ and $ p $ dictate the expected properties of the matrix $ \L $, that is dimension and
+sparsity, respectively. Thus when $ N $ increases, we get expect higher computational cost due
+to the increased cost of the matrix-vector multiplication $ \L v $, while when $ p $ increases, $ \L
+$ becomes more dense, requiring more floating point operations for the algorithm and so increasing runtime.
 We choose $ \varepsilon = 10^{-5} $, as we observed that smaller thresholds rarely triggered full
 orthogonalization. As described in Algorithm \ref{alg:lanczos} our stopping criteria happens when $ \|g_j - g_{j-3}\|_2 < \epsilon $, at the step $
 j$. \footnote{Here
@@ -520,7 +523,8 @@ We did't address the high memory cost of $ O(N\cdot M) $ of Lanczos, this could 
 using a two-step implementation, that stores only three vectors and reconstructs the basis when
 needed. Further, because full orthogonalization was widely used in the second experiment, we could
 implement selective reorthogonalization as described in \cite{demmel1997}, but both methods fall
-behind the objective of this course.
+behind the objective of this course. Another improvement, which we already discussed, would be to
+implement a working \texttt{WarpedTranslates} class in Library \cite{pygsp}.
 
 \clearpage
 \bibliographystyle{unsrt}
