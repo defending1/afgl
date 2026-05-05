@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.linalg as LA
+import scipy.linalg as SCLA
 from pygsp import filters
 
 
@@ -21,7 +22,13 @@ def compute_g_M(V: np.ndarray, T, s: np.ndarray, g, ch=0) -> np.ndarray:
         ch: Itersine selected channel
 
     """
-    eigvals, U = LA.eigh(T)
+    if isinstance(T, np.ndarray) and T.ndim == 2 and T.shape[0] == 2:
+        eigvals, U = SCLA.eig_banded(T, lower=True)
+        order = np.argsort(eigvals)
+        eigvals = eigvals[order]
+        U = U[:, order]
+    else:
+        eigvals, U = LA.eigh(T)
     g_lambda = g.evaluate(eigvals)[ch]
     u_1 = U.T[:, 0]
     # Computing Ug(eigvals)U*e_1

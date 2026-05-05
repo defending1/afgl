@@ -47,8 +47,8 @@ def run_comparison_1_for_graph(
     GLs = filter_signal_with_fourier(G, s, g)
 
     for M in range(1, M_MAX + 1):
-        g_M = compute_g_M(V[:, :M], T[:M, :M], s, g, ch)
-        g_Mj = compute_g_M(V[:, : M + j], T[: M + j, : M + j], s, g, ch)
+        g_M = compute_g_M(V[:, :M], T[:, :M], s, g, ch)
+        g_Mj = compute_g_M(V[:, : M + j], T[:, : M + j], s, g, ch)
 
         lanczos_err[M - 1] = LA.norm(g_Mj - g_M)
         true_err[M - 1] = LA.norm(GLs - g_M)

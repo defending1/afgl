@@ -109,10 +109,8 @@ def lanczos_iteration(
             else:
                 if eps_STOP is not None and g is not None and (j + 1) - 3 > 0:
                     T = T_tridiag(alp[: j + 1], beta[:j])
-                    g_j3 = compute_g_M(
-                        V[:, : (j + 1) - 3], T[: (j + 1) - 3, : (j + 1) - 3], s, g
-                    )
-                    g_j = compute_g_M(V[:, : j + 1], T[: j + 1, : j + 1], s, g)
+                    g_j3 = compute_g_M(V[:, : (j + 1) - 3], T[:, : (j + 1) - 3], s, g)
+                    g_j = compute_g_M(V[:, : j + 1], T[:, : j + 1], s, g)
                     r_j = LA.norm(g_j - g_j3)
 
                     if r_j < eps_STOP:
