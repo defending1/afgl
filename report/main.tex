@@ -68,6 +68,21 @@
 \theoremstyle{remark}
 \newtheorem{remark}[theorem]{Remark}
 
+% Define a distinct style for experiments
+\newtheoremstyle{experimental}
+  {\topsep}            % Space above
+  {\topsep}            % Space below
+  {\upshape}           % Body font: Upright (non-italic) suits empirical content
+  {}                   % Indent amount
+  {\bfseries} % Head font: Bold sans-serif for a modern, technical aesthetic
+  {.}                  % Punctuation after theorem head
+  {.5em}               % Space after theorem head
+  {}                   % Theorem head spec
+
+% Apply the style and define the unnumbered environment
+\theoremstyle{experimental}
+\newtheorem*{experiment}{Experiment}
+
 \title{%
     Accelerated Filtering on Graphs using Lanczos method
     \\ \large Scientific Computing project report}
@@ -325,15 +340,32 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
 \end{algorithm}
 
 
-\begin{remark}[Computational cost]
-  Lanczos algorithm computes $ V $  with partial orthogonalization, with $ O(M \cdot N
+\subsubsection{Computational cost}
+
+Here we overview computational cost of the algorithm that we tested, for an input matrix $ A $,
+where $ \text{nnz}(A) $ is the number of non-zero elements of $ A $:
+
+\begin{itemize}
+  \item \textbf{Lanczos:} Computes $ V $  with partial orthogonalization, with $ O(M \cdot N
   + M \cdot \text{nnz}(A)) $ for a sparse matrix \footnote{note that the product $ Av_j $ dominates the cost,
-  and that $ \text{nnz}(A) = N^2 $ when $ A $ is dense.}. With full orthogonalization, computing $ w = w -
+  and that $ \text{nnz}(A) = N^2 $ when $ A $ is dense.}. When we need to evaluate function $ g $ at
+  each iteraiton, such as in Section \ref{ssec:ex23}, we must consider also the $ O(N^2) $
+  operations to compute $ g(\L) $ using (\texttt{eigh\_banded} routine fron Scipy, which used divide
+  and conqueer), thus the total cost in this case becomes $ O(M \cdot N^2) $.
+\item \textbf{Lanczos algorithm with double orthogonalization:}, computing $ w = w -
   \sum_{i=1}^j v_i(v_i^{\top}w) $ can cost up
-  to $ O(M\cdot N) $, thus the total cost becomes $ O(M^2N +  M\cdot \text{nnz}(A)) $. \todo{cost of
-  computing STEP ER} While it is an efficient
-  method for small $ M\ll N $ for computing the basis of a Krylov subspace, it has a significant $ O(M \cdot N) $ memory cost for storing $ V_M $.
-\end{remark}
+  to $ O(M\cdot N) $, thus the total cost becomes $ O(M^2N +  M\cdot \text{nnz}(A)) $, and when we
+  also evaluate $ g $ it becomes $ O(M^2N + MN^2) $.
+\item \textbf{Arnoldi with double orthogonalization}: For the orthogonalization it takes $ O(M^2N)
+  $, plus the matrix vector product at each step with $ A $, hence again $ O(M^2N + M \cdot
+  \text{nnz(A)}) $. Cost is higher when evaluating $ g $, due to the fact that matrix $ H $ is not
+  perfectly symmetric and tridiagonal (it is up to a small epsilon). Thus we must use standard QR
+  for computing the eigendecomposition, wich adds up to a brutal $ O(M \cdot N^3)$.
+ \end{itemize}
+
+We observe that in Lanczos computing $ g $ it not necessary a drawback when $ A $ is dense or when few
+iterations are performed.
+It should also be noted that these algorithms suffer from a significant $ O(M \cdot N) $ memory cost for storing $ V_M $.
 
 
 \subsubsection{Why double orthogonalization?}
@@ -344,20 +376,20 @@ computing its eigendecomposition is stable and efficient. \todo{why? cost?}
   conditioned. The following example motivates this choice:
 \begin{example}
     
-We consider a ER graph with $ N = 1000,M=200, p=0.04 $.
+We consider a Erdős-Rényi graph with $ N = 1000,M=200, p=0.04 $.
 The associated Laplacian $ \L $ is terribely conditioned, indeed $ k_2(\L) = 2.365029616834158 \times 10^{17} $:
   \input{assets/orthogonalization.tex}
 
   \end{example}
   As we can observe in Table \ref{table:orthog}, orthogonalizing two times against the previous
-  basis vectors, yelds to a better orthogonal basis $ V$, while a single iteration here performs worse than standard Lanczos.
+  basis vectors yelds to a better orthogonal basis $ V$, while a single iteration here performs worse than standard Lanczos.
 
 
 \subsubsection{Comparing Lanczos with Arnoldi}
 
-Here we do a short comparison of Lanczos and Arnoldi with double orthogonalization. From the theory,
-we know that the former is faster than the latter, but wehaven't seen a practical comparison in
-class.
+Here we do a short comparison of Lanczos and Arnoldi with double orthogonalization. Recall that
+Arnoldi is \todo{Cost} while two-pass Lanczos is. We now see a
+numerical comparison.
 
 We first introduce the Arnoldi algorithm with double orthogonalization in Algorithm \ref{alg:arnoldi_double_ortho}, as seen in class.
 
@@ -419,6 +451,7 @@ In our implementation we tested that the matrix $ H $ returned by Arnoldi is tri
 symmetric (up to a small epsilon).
 
 \section{Experiments}
+\label{sec:experiments}
 
 In the following section we generate random Erdős-Rényi and Sensor graphs, as defined in Definitions
 \ref{def:ER} and \ref{def:Sensor}, to study Lanczos algorithm's accuracy and performance.
@@ -431,7 +464,12 @@ Scope of this experiment is to numerically verify the approximation in Equation
 algorithmic error and the ground truth $ g(\L) $.
 Let's recall some quantities that will be useful in this section: $ N $ is the number of graph
 nodes and size of the Laplacian $ \L $, $ M $ is the maximum size of the Krylov subspace, and $ p $
-the probability of the graph. In the following experiment we set $ (N,M,p) = (500,200,0.04) $.
+the probability of the graph. 
+
+\begin{experiment}
+  
+\end{experiment}
+In the following experiment we set $ (N,M,p) = (500,200,0.04) $.
 
 \begin{definition}(Errors)
   We define the Lanczos \emph{iteration error} as $\norm{g_{M+j} - g_M}_2 $, where $ j $ is small,
@@ -475,35 +513,64 @@ to jump in and out the interval $ [-\frac{1}{2}, \frac{1}{2}] $, causing spikes.
 \todo{I'm not really sure about this.}
 
 \subsection{Performance comparison for Erdős-Rényi graphs}
+\label{ssec:ex23}
 
 In this experiemnt, we will study the performance correlation for running Lanczos on Erdős-Rényi
 graphs $ \G(N,p) $, comparing time data when only $ N $ varies and when only $ p $ varies. In these
 graphs, $ N $ and $ p $ dictate the expected properties of the matrix $ \L $, that is dimension and
 sparsity, respectively. Thus when $ N $ increases, we get expect higher computational cost due
 to the increased cost of the matrix-vector multiplication $ \L v $, while when $ p $ increases, $ \L
-$ becomes more dense, requiring more floating point operations for the algorithm and so increasing runtime.
+$ becomes more dense, requiring more floating point operations for the algorithm and so increasing
+runtime. Figure ? shows spyplots of some of the matrix we used.
 We choose $ \varepsilon = 10^{-5} $, as we observed that smaller thresholds rarely triggered full
 orthogonalization. As described in Algorithm \ref{alg:lanczos} our stopping criteria happens when $ \|g_j - g_{j-3}\|_2 < \epsilon $, at the step $
 j$. \footnote{Here
 index goes backwards because matrix $ T_l $ would not be defined for $ l>j $ at iteration $ j $!}
+
+\begin{experiment}
 In the following experiment, we choose generate two sample datasets, letting $ n = 6 $,:
 \begin{enumerate}
   \item $ N $ varies in $ \{ 50,100,\dots,2^n \cdot 50\} $, $ p = 0.04 $.
   \item $ p $ varies in $ \{ 0.01,0.02,\dots,2^n \cdot 0.01 \}$, $ N = 1000$.
 \end{enumerate}
-We repeat the generation of these graphs $ 400 $ times to avoid graph randomness biasing our results.
+We repeat the generation of these graphs $ 200 $ times to avoid graph randomness biasing our results.
+ 
+\end{experiment}
+
+\begin{figure}[ht!]
+  \centering
+  \caption{Plot of the sparsity patter of the generated matrices, as $ N,p $ varies.} 
+  \label{fig:spy}
+  \includegraphics[width=1\textwidth]{assets/ex23_spy_grid.pdf}
+\end{figure}
+
+
 For time telemetry, we adopt Python's \texttt{time.perf\_monitor()} which ensures precise
 measurement. When measuring time, first the algorithm runs without orthogonalization, and if full
-orthogonalization is triggered, it is taken in the total measurement. From Table
-\ref{table:ex23_some} shows that for some cases, we can't just blindlessy enforce full
-orthogonalization, but we run it when we detect orthogonality loss.
+orthogonalization is triggered, it is taken in the total measurement. Table
+\ref{table:ex23_some} shows why we can't just blindlessy enforce full
+orthogonalization, but we run it when we detect orthogonality loss. From these first examples, we
+can see that 
 \begin{table}[ht!]
   \centering
   \caption{Lanczos execution tests when $ N $ varies and $ p $ fixed (top), and 
   vice versa (bottom).}
   \label{table:ex23_some}
-  \input{assets/table_ex_2.tex}
-  \input{assets/table_ex_3.tex}
+  \input{assets/table_ex23_example.tex}
+\end{table}
+
+\begin{table}[ht!]
+  \centering
+  \caption{Stats when $ N $ varies.}
+  \label{table:group_table_2}
+  \input{assets/group_table_2.tex}
+\end{table}
+
+\begin{table}[ht!]
+  \centering
+  \caption{Stats when $ p $ varies.}
+  \label{table:group_table_3}
+  \input{assets/group_table_3.tex}
 \end{table}
 
 After executing the experiments above, we obtain the plot in Figure \ref{fig:loglog}.
@@ -511,9 +578,9 @@ After executing the experiments above, we obtain the plot in Figure \ref{fig:log
 
 \begin{figure}[ht!]
   \centering
-  \caption{Log-log plot of four iteration of the results in Table AVG TABLE} 
+  \caption{Log-log plot of 200 iterations of the results in Table } 
   \label{fig:loglog}
-  \includegraphics[width=0.6\textwidth]{assets/correlation_23.pdf}
+  \includegraphics[width=0.8\textwidth]{assets/correlation_23.pdf}
 \end{figure}
 
 
