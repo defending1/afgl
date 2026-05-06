@@ -21,7 +21,8 @@ class Ex23:
         self.tables_dir = self.out_dir / "tables"
         self.serialized_dir.mkdir(parents=True, exist_ok=True)
         self.tables_dir.mkdir(parents=True, exist_ok=True)
-        self.laplacians: list[Any] = []
+        self.graphs: list[Any] = []
+        self.graph_cache: dict[tuple[int, float, int], Any] = {}
         palette = [
             "#000000",  # black
             "#ff0000",  # red
@@ -33,6 +34,8 @@ class Ex23:
         self.colors = [palette[i % len(palette)] for i in range(self.n)]
 
     def run(self) -> pd.DataFrame:
+        self._generate_graphs()
+        self._load_graphs()
         results_ex2 = self.run_ex_2()
         results_ex3 = self.run_ex_3()
 
@@ -49,10 +52,50 @@ class Ex23:
         df3.attrs["n"] = self.n
         df3.attrs["times"] = self.times
         df3.to_pickle(self.serialized_dir / "df3.pkl")
-        pd.to_pickle(self.laplacians, self.serialized_dir / "laplacians.pkl")
+
+    def _experiment_params(self) -> tuple[np.ndarray, float, int, np.ndarray]:
+        p_ex2 = 0.04
+        M = 200
+        N_values = 50 * (2 ** np.arange(self.n))
+        p_values = 0.01 * (2 ** np.arange(self.n))
+        return N_values, p_ex2, M, p_values
+
+    def _graph_key(self, N: int, p: float, t_index: int) -> tuple[int, float, int]:
+        return (int(N), float(p), int(t_index))
+
+    def _generate_graphs(self) -> None:
+        if (self.serialized_dir / "graphs.pkl").exists():
+            return
+        N_values, p_ex2, _, p_values = self._experiment_params()
+        graphs_data: list[dict[str, Any]] = []
+        for t_index in range(self.times):
+            for N in N_values:
+                graphs_data.append(self._build_graph_data(N, p_ex2, t_index))
+            for p in p_values:
+                graphs_data.append(self._build_graph_data(1000, p, t_index))
+
+        self.graphs = graphs_data
+        pd.to_pickle(self.graphs, self.serialized_dir / "graphs.pkl")
+
+    def _build_graph_data(self, N: int, p: float, t_index: int) -> dict[str, Any]:
+        G = graphs.ErdosRenyi(N, p)
+        return {"adjacency": G.W, "N": N, "p": p, "t": t_index}
+
+    def _load_graphs(self) -> None:
+        self.graphs = pd.read_pickle(self.serialized_dir / "graphs.pkl")
+        self.graph_cache = {
+            self._graph_key(item["N"], item["p"], item["t"]): item["adjacency"]
+            for item in self.graphs
+        }
+
+    def _get_graph(self, N: int, p: float, t_index: int) -> Any:
+        key = self._graph_key(N, p, t_index)
+        if key not in self.graph_cache:
+            raise KeyError(f"Missing graph for N={N}, p={p}, t={t_index}")
+        return graphs.Graph(self.graph_cache[key])
 
     def _perform_iteration(
-        self, N: int, M: int, p: float, index: int, ex_num: int
+        self, N: int, M: int, p: float, index: int, ex_num: int, t_index: int
     ) -> dict[str, Any]:
         """Perform a single Lanczos iteration on an Erdős-Rényi graph.
 
@@ -70,12 +113,9 @@ class Ex23:
         s = np.random.randint(1, 10000, N).astype(float)
         s /= LA.norm(s)
 
-        G = graphs.ErdosRenyi(N, p)
+        G = self._get_graph(N, p, t_index)
         G.compute_laplacian("combinatorial")
         L = G.L
-        print(N, p)
-        self.laplacians.append({"laplacian": L, "N": N, "p": p})
-
         g = compute_g_itersine(G)
 
         # Lanczos method
@@ -120,28 +160,25 @@ class Ex23:
 
     def run_ex_2(self) -> list[dict[str, Any]]:
         """Experiment 2: Increasing graph size N, fixed p and M."""
-        p = 0.04
-        M = 200
-        N_values = 50 * (2 ** np.arange(self.n))
+        N_values, p, M, _ = self._experiment_params()
 
         results = []
-        for _ in range(self.times):
-            for N in N_values:
+        for t_index in range(self.times):
+            for index, N in enumerate(N_values):
                 results.append(
-                    self._perform_iteration(N, M, p, list(N_values).index(N), ex_num=2)
+                    self._perform_iteration(N, M, p, index, ex_num=2, t_index=t_index)
                 )
         return results
 
     def run_ex_3(self) -> list[dict[str, Any]]:
         """Experiment 3: Fixed N and M, increasing p."""
         N = 1000
-        M = 200
-        p_values = 0.01 * (2 ** np.arange(self.n))
+        _, _, M, p_values = self._experiment_params()
 
         results = []
-        for i in range(self.times):
-            for p in p_values:
+        for t_index in range(self.times):
+            for index, p in enumerate(p_values):
                 results.append(
-                    self._perform_iteration(N, M, p, list(p_values).index(p), ex_num=3)
+                    self._perform_iteration(N, M, p, index, ex_num=3, t_index=t_index)
                 )
         return results

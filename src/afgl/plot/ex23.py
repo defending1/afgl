@@ -2,6 +2,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from pygsp import graphs
 
 
 def plot_ex23_spy_grid():
@@ -11,15 +12,17 @@ def plot_ex23_spy_grid():
     out_dir = Path("./out")
     plots_dir = out_dir / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)
-    laplacians = pd.read_pickle(out_dir / "serialized" / "laplacians.pkl")
+    graphs_data = pd.read_pickle(out_dir / "serialized" / "graphs.pkl")
     panel_count = 12
     fig, axes = plt.subplots(2, 6, figsize=(16, 6))
     axes_flat = axes.ravel()
 
     for idx in range(panel_count):
         ax = axes_flat[idx]
-        entry = laplacians[idx]
-        artist = ax.spy(entry["laplacian"], markersize=0.25)
+        entry = graphs_data[idx]
+        G = graphs.Graph(entry["adjacency"])
+        G.compute_laplacian("combinatorial")
+        artist = ax.spy(G.L, markersize=0.25)
         if hasattr(artist, "set_rasterized"):
             artist.set_rasterized(True)
         ax.set_title(
