@@ -17,6 +17,10 @@ class Ex23:
         self.times = times
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
+        self.serialized_dir = self.out_dir / "serialized"
+        self.tables_dir = self.out_dir / "tables"
+        self.serialized_dir.mkdir(parents=True, exist_ok=True)
+        self.tables_dir.mkdir(parents=True, exist_ok=True)
         self.laplacians: list[Any] = []
         palette = [
             "#000000",  # black
@@ -40,12 +44,12 @@ class Ex23:
 
         df2.attrs["n"] = self.n
         df2.attrs["times"] = self.times
-        df2.to_pickle(self.out_dir / "df2.pkl")
+        df2.to_pickle(self.serialized_dir / "df2.pkl")
 
         df3.attrs["n"] = self.n
         df3.attrs["times"] = self.times
-        df3.to_pickle(self.out_dir / "df3.pkl")
-        pd.to_pickle(self.laplacians, self.out_dir / "laplacians.pkl")
+        df3.to_pickle(self.serialized_dir / "df3.pkl")
+        pd.to_pickle(self.laplacians, self.serialized_dir / "laplacians.pkl")
 
     def _perform_iteration(
         self, N: int, M: int, p: float, index: int, ex_num: int
@@ -95,23 +99,23 @@ class Ex23:
 
     def print_group_table(self):
         index = ["$N$", "$p$", "Time", "Stopping index"]
-        df2 = pd.read_pickle("./out/df2.pkl")
-        df3 = pd.read_pickle("./out/df3.pkl")
+        df2 = pd.read_pickle(self.serialized_dir / "df2.pkl")
+        df3 = pd.read_pickle(self.serialized_dir / "df3.pkl")
         df2.drop(columns=["color"])
         df3.drop(columns=["color"])
         df2 = df2[index]
         df3 = df3[index]
 
         df2.groupby(["$N$"]).agg(["mean", "var"]).to_latex(
-            self.out_dir / "group_table_2.tex"
+            self.tables_dir / "group_table_2.tex"
         )
         df3.groupby(["$p$"]).agg(["mean", "var"]).to_latex(
-            self.out_dir / "group_table_3.tex"
+            self.tables_dir / "group_table_3.tex"
         )
 
     def save_to_latex(self, df: pd.DataFrame, ex_num: int) -> None:
         """Save DataFrame to a LaTeX table."""
-        output_path = self.out_dir / f"table_ex_{ex_num}.tex"
+        output_path = self.tables_dir / f"table_ex_{ex_num}.tex"
         df.to_latex(output_path, index=False)
 
     def run_ex_2(self) -> list[dict[str, Any]]:

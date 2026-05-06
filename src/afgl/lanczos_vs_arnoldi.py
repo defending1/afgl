@@ -17,6 +17,10 @@ class LanczosVsArnoldi:
     def __init__(self, out_dir: str = "./out"):
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
+        self.plots_dir = self.out_dir / "plots"
+        self.tables_dir = self.out_dir / "tables"
+        self.plots_dir.mkdir(parents=True, exist_ok=True)
+        self.tables_dir.mkdir(parents=True, exist_ok=True)
 
     def run(self) -> pd.DataFrame:
         results_ex2 = self.run_exp()
@@ -30,7 +34,7 @@ class LanczosVsArnoldi:
                 "variance": df[stats_cols].var(),
             }
         )
-        stats_df.to_latex(self.out_dir / "lanczos_vs_arnoldi_stats.tex")
+        stats_df.to_latex(self.tables_dir / "lanczos_vs_arnoldi_stats.tex")
         plt.figure(figsize=(10, 6))  # set the figure size
         plt.plot(
             df["$N$"],
@@ -65,7 +69,7 @@ class LanczosVsArnoldi:
 
         plt.legend(fontsize=16)
         plt.grid(True)
-        plt.savefig("./out/lanczos_vs_arnoldi_plot.pdf", bbox_inches="tight")
+        plt.savefig(self.plots_dir / "lanczos_vs_arnoldi_plot.pdf", bbox_inches="tight")
         plt.close()
 
         return df

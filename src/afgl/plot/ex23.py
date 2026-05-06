@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -6,7 +8,10 @@ def plot_ex23_spy_grid():
     """
     Plots 6x2 spy grid of laplacians.
     """
-    laplacians = pd.read_pickle("./out/laplacians.pkl")
+    out_dir = Path("./out")
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    laplacians = pd.read_pickle(out_dir / "serialized" / "laplacians.pkl")
     panel_count = 12
     fig, axes = plt.subplots(2, 6, figsize=(16, 6))
     axes_flat = axes.ravel()
@@ -14,7 +19,9 @@ def plot_ex23_spy_grid():
     for idx in range(panel_count):
         ax = axes_flat[idx]
         entry = laplacians[idx]
-        ax.spy(entry["laplacian"], markersize=0.25)
+        artist = ax.spy(entry["laplacian"], markersize=0.25)
+        if hasattr(artist, "set_rasterized"):
+            artist.set_rasterized(True)
         ax.set_title(
             f"$(N={entry['N']}, p={entry['p']:.3f})$",
             fontsize=9,
@@ -23,13 +30,16 @@ def plot_ex23_spy_grid():
         ax.set_yticks([])
 
     plt.tight_layout()
-    plt.savefig("./out/ex23_spy_grid.pdf", bbox_inches="tight")
+    plt.savefig(plots_dir / "ex23_spy_grid.pdf", bbox_inches="tight")
     plt.close()
 
 
 def plot_ex23():
-    df2 = pd.read_pickle("./out/df2.pkl")
-    df3 = pd.read_pickle("./out/df3.pkl")
+    out_dir = Path("./out")
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    df2 = pd.read_pickle(out_dir / "serialized" / "df2.pkl")
+    df3 = pd.read_pickle(out_dir / "serialized" / "df3.pkl")
     x = df2["Time"]
     y = df3["Time"]
     color_labels = df3["color"]
@@ -86,5 +96,5 @@ def plot_ex23():
         ax.set_title("Performance Correlation Between $N$ and $p$")
 
         # Save and close
-        plt.savefig("./out/correlation_23.pdf", bbox_inches="tight")
+        plt.savefig(plots_dir / "correlation_23.pdf", bbox_inches="tight")
         plt.close()

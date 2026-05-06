@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
@@ -52,7 +53,10 @@ def plot_graphs(
     axs[1, 1].set_axis_off()
 
     # Prevent label/title overlap
-    plt.savefig("./out/printed_graphs.pdf", bbox_inches="tight")
+    out_dir = Path("./out")
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    plt.savefig(plots_dir / "printed_graphs.pdf", bbox_inches="tight")
     plt.close(fig)
 
 
@@ -86,5 +90,8 @@ def plot_error_comparison(
 
     plt.tight_layout()
 
-    plt.savefig("./out/ex1_estimate.pdf", bbox_inches="tight")
+    out_dir = Path("./out")
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    plt.savefig(plots_dir / "ex1_estimate.pdf", bbox_inches="tight")
     plt.close(fig)

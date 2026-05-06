@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import matplotlib.patches as mpatches
@@ -61,5 +62,8 @@ def plot_itersine(G_Sensor: "Graph", G_ER: "Graph", Nf: int = 7) -> None:
     )
 
     plt.tight_layout(rect=[0, 0.1, 1, 1])
-    plt.savefig("./out/itersine_comparison.pdf", bbox_inches="tight")
+    out_dir = Path("./out")
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    plt.savefig(plots_dir / "itersine_comparison.pdf", bbox_inches="tight")
     plt.close(fig)
