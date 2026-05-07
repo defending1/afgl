@@ -98,15 +98,15 @@ class LanczosVsArnoldi:
         eps = 10e-6
 
         start_Lno = time.perf_counter()
-        _, _, debug_Lno = lanczos(L, s, M, g, eps, "partial")
+        _, _, debug_Lno = lanczos(L, s, M, g=g, eps_STOP=eps, ortho_type="partial")
         end_Lno = time.perf_counter()
 
         start_L = time.perf_counter()
-        _, _, debug = lanczos(L, s, M, g, eps, "full")
+        _, _, debug = lanczos(L, s, M, g=g, eps_STOP=eps, ortho_type="full")
         end_L = time.perf_counter()
 
         start_A = time.perf_counter()
-        _, _, j_A = arnoldi(L, s, M, g, eps)
+        _, _, j_A = arnoldi(L, s, M, g=g, eps_STOP=eps)
         end_A = time.perf_counter()
 
         return {
@@ -116,16 +116,16 @@ class LanczosVsArnoldi:
             "Time Lanczos (no ortho)": end_Lno - start_Lno,
             "Time Lanczos (full ortho)": end_L - start_L,
             "Time Arnoldi": end_A - start_A,
-            "Stopping index Lanczos (no ortho)": debug_Lno[2],
-            "Stopping index Lanczos (full ortho)": debug[2],
-            "Stopping index Arnoldi": j_A,
+            "Stopping index Lanczos (no ortho)": debug_Lno[2] + 1,
+            "Stopping index Lanczos (full ortho)": debug[2] + 1,
+            "Stopping index Arnoldi": j_A + 1,
             "$\\varepsilon$": eps,
         }
 
     def run_exp(self) -> list[dict[str, Any]]:
         """Experiment 2: Increasing graph size N, fixed p and M."""
         M = 200
-        N_values = list(range(300, 3000, 50))
+        N_values = list(range(300, 6000, 100))
 
         results = []
         for N in N_values:
