@@ -22,14 +22,20 @@ def compute_g_M(V: np.ndarray, T, s: np.ndarray, g, ch=0) -> np.ndarray:
         ch: Itersine selected channel
 
     """
-    if isinstance(T, np.ndarray) and T.ndim == 2 and T.shape[0] == 2:
+    T_arr = np.asarray(T)
+    if T_arr.ndim == 2 and T_arr.shape[0] == 2:
         # Uses divide and conquer.
-        eigvals, U = SCLA.eig_banded(T, lower=True)
-        order = np.argsort(eigvals)
-        eigvals = eigvals[order]
-        U = U[:, order]
+        alp = T_arr[0]
+        n = len(alp)
+        beta = T_arr[1, : n - 1]
+
+        eigvals, U = SCLA.eigh_tridiagonal(alp, beta, lapack_driver="stevd")
+    elif T_arr.ndim == 2 and T_arr.shape[0] == T_arr.shape[1]:
+        eigvals, U = SCLA.eig(T_arr)
     else:
-        eigvals, U = SCLA.eig(T)
+        raise ValueError(
+            "T must be either a 2xN tridiagonal representation or a square matrix."
+        )
     g_lambda = g.evaluate(eigvals)[ch]
     u_1 = U.T[:, 0]
     # Computing Ug(eigvals)U*e_1
