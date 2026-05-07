@@ -27,15 +27,15 @@ def test_check_orthogonalization_trigger():
     L = G.L
 
     print(f"$k_2(L)={LA.cond(L.toarray(), 2)}")
-    V, T, debug = lanczos(G.L, s, M, full_orthogonalization=False)
+    V, T, debug = lanczos(G.L, s, M, ortho_type="partial")
     Id = np.eye(V.shape[1])
     print(f"Partial orthogonalization {LA.norm(V.T @ V - Id)}")
 
-    V, T, debug = lanczos(G.L, s, M, full_orthogonalization=False, gs_iterations=1)
+    V, T, debug = lanczos(G.L, s, M, ortho_type="full", gs_iterations=1)
     Id = np.eye(V.shape[1])
     print(f"Single Gram-Schmidt orthogonalization {LA.norm(V.T @ V - Id)}")
 
-    V, T, debug = lanczos(G.L, s, M, full_orthogonalization=True, gs_iterations=2)
+    V, T, debug = lanczos(G.L, s, M, ortho_type="full", gs_iterations=2)
     Id = np.eye(V.shape[1])
     print(f"Double Gram-Schmidt orthogonalization {LA.norm(V.T @ V - Id)}")
 
