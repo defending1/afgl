@@ -8,7 +8,7 @@ from afgl.util.g_function import compute_g_M
 
 
 def arnoldi(
-    A: Union[np.ndarray, sp.spmatrix], s: np.ndarray, M: int, g, eps_STOP
+    A: Union[np.ndarray, sp.spmatrix], s: np.ndarray, M: int, g=None, eps_STOP=None
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Computes an orthonormal basis for the Krylov subspace using the Arnoldi iteration.
@@ -55,7 +55,7 @@ def arnoldi(
             break
         else:
             if j < M - 1:
-                if j > 2:
+                if j > 2 and g is not None and eps_STOP is not None:
                     g_j3 = compute_g_M(
                         V[:, : (j + 1) - 3], H[: (j + 1) - 3, : (j + 1) - 3], s, g
                     )
