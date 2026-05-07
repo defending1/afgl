@@ -29,7 +29,6 @@ def compute_g_M(V: np.ndarray, T, s: np.ndarray, g, ch=0) -> np.ndarray:
         eigvals = eigvals[order]
         U = U[:, order]
     else:
-        # Uses Implicitly Restarted Arnoldi Method
         eigvals, U = SCLA.eig(T)
     g_lambda = g.evaluate(eigvals)[ch]
     u_1 = U.T[:, 0]

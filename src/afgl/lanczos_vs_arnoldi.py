@@ -98,11 +98,11 @@ class LanczosVsArnoldi:
         eps = 10e-6
 
         start_Lno = time.perf_counter()
-        _, _, debug_Lno = lanczos(L, s, M, g, False, eps)
+        _, _, debug_Lno = lanczos(L, s, M, g, eps, "partial")
         end_Lno = time.perf_counter()
 
         start_L = time.perf_counter()
-        _, _, debug = lanczos(L, s, M, g, True, eps)
+        _, _, debug = lanczos(L, s, M, g, eps, "full")
         end_L = time.perf_counter()
 
         start_A = time.perf_counter()
@@ -125,7 +125,7 @@ class LanczosVsArnoldi:
     def run_exp(self) -> list[dict[str, Any]]:
         """Experiment 2: Increasing graph size N, fixed p and M."""
         M = 200
-        N_values = list(range(300, 3000, 100))
+        N_values = list(range(300, 3000, 50))
 
         results = []
         for N in N_values:

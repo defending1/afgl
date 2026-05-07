@@ -128,8 +128,8 @@ def lanczos(
     M: int,
     g: Optional[Any] = None,
     eps_STOP: Optional[float] = None,
-    full_orthogonalization=False,
-    gs_iterations=2,
+    ortho_type: Optional[str] = "auto",
+    gs_iterations: Optional[int] = 2,
 ) -> Tuple[np.ndarray, np.ndarray, List[Any]]:
     r"""
     Lanczos extended method with optional re-orthogonalization.
@@ -149,7 +149,7 @@ def lanczos(
     full_ortho_triggered = False
     EPS_ORTHO = 10e-10
 
-    if not full_orthogonalization:
+    if ortho_type == "auto":
         V, alp, beta, break_reason, j = lanczos_iteration(
             L, s, M, g, False, eps_STOP, gs_iterations
         )
@@ -161,11 +161,18 @@ def lanczos(
                 L, s, M, g, True, eps_STOP, gs_iterations
             )
             full_ortho_triggered = True
-    else:
+    elif ortho_type == "full":
         V, alp, beta, break_reason, j = lanczos_iteration(
             L, s, M, g, True, eps_STOP, gs_iterations
         )
         full_ortho_triggered = True
+    elif ortho_type == "partial":
+        V, alp, beta, break_reason, j = lanczos_iteration(
+            L, s, M, g, False, eps_STOP, gs_iterations
+        )
+        full_ortho_triggered = False
+    else:
+        raise ValueError("Orthogonalization type not supported")
 
     T = T_tridiag(alp, beta)
     return V, T, [full_ortho_triggered, break_reason, j]
