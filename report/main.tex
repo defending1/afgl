@@ -13,7 +13,7 @@
 \usepackage{float}
 \usepackage{etoolbox}
 \usepackage{hyperref}
-
+\usepackage{subcaption}
 \usepackage{tikz}
 \usepackage{booktabs}
 \usepackage{pgfplots}
@@ -310,7 +310,7 @@ passing a given threshold $ \tau $, it computes the residual $
 recalling that $  g_M \defeq \|b \|_2V_Mg(T_M)e_1
 $, where $ g(T_M) $ is computed by diagonalizing $ T_M $: because $ T_M $ is symmetric, banded tridiagonal, 
 computing its eigendecomposition is stable and efficient; indeed the structure of $ T_M $ allows us
-to use a divide and conquer algorithm, and we'll use \texttt{eigh\_banded} routine from Scipy.
+to use a divide and conquer algorithm, and we'll use \texttt{eigh\_tridiagonal} routine from Scipy.
 
 \begin{remark}
   From now on we'll sometimes refer to Lanczos with double/full orthogonalization as full Lanczos and as
@@ -503,10 +503,25 @@ outperforms Arnoldi, but curves follow a similar behaviour.
 
 \begin{figure}[ht!]
   \centering
-  \caption{Comparing Lanczos and Arnoldi, both with double orthogonalization. Both algorithm stop
-  when the threshold $ \tau = 10^{-6} $ is met. We report also time of Lanczos without
-orthogonalization for reference, but it is not always the case that it is slower than the other two.} 
-  \includegraphics[width=0.8\textwidth]{assets/plots/lanczos_vs_arnoldi_plot.pdf}
+  % First subfigure
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{assets/plots/lanczos_vs_arnoldi_plot.pdf}
+    \caption{The algorithms stop when the threshold $ \tau = 10^{-6} $ is met.}
+    \label{fig:avl_a}
+  \end{subfigure}
+  \hfill
+  % Second subfigure
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{assets/plots/lanczos_vs_arnoldi_plot_no_g.pdf}
+    \caption{Plot run until $ M $ is reached. We see that in most cases they match the complexity analysis.}
+    \label{fig:avl_b}
+  \end{subfigure}
+  
+  \caption{Comparing Lanczos and Arnoldi. When stopped with threshold we see that theoretical
+  complexity not always match---indeed here full orthogonalization is converging faster than the
+standard one, probably due the fact that the spectrum of $ T_l $ falls more outside the definition interval of $ g $.}
   \label{fig:avl}
 \end{figure}
 
