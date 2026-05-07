@@ -122,7 +122,7 @@ class Ex23:
         eps = 10e-6
 
         start = time.perf_counter()
-        _, _, debug = lanczos(L, s, M, g, eps)
+        _, _, debug = lanczos(L, s, M, g=g, eps_STOP=eps)
         end = time.perf_counter()
 
         return {
@@ -132,7 +132,7 @@ class Ex23:
             "Time": end - start,
             "Orthogonalization": "Full" if debug[0] else "Partial",
             "Breakdown": debug[1],
-            "Stopping index": debug[2],
+            "Stopping index": debug[2] + 1,
             "$\\varepsilon$": eps,
             "color": self.colors[index],
         }
