@@ -24,32 +24,68 @@ def plot_graphs(
     """
     fig, axs = plt.subplots(2, 2, figsize=(6.6, 5))
 
+    vmin = np.min([np.min(s), np.min(signal_ER), np.min(signal_S)])
+    vmax = np.max([np.max(s), np.max(signal_ER), np.max(signal_S)])
+    color_limits = [vmin, vmax]
+
     # Set coordinates
     G_ER.set_coordinates()
     G_Sensor.set_coordinates()
 
     # TOP LEFT
-    G_ER.plot(s, ax=axs[0, 0], vertex_size=15, edge_width=0.5, edge_color="gray")
-    axs[0, 0].set_title(rf"Erdős-Rényi Graph $(N = {N}, p = {p})$", pad=20)
+    G_ER.plot(
+        s,
+        ax=axs[0, 0],
+        vertex_size=15,
+        edge_width=0.5,
+        edge_color="gray",
+        colorbar=False,
+        limits=color_limits,
+    )
+    axs[0, 0].set_title(rf"Erdős-Rényi Graph $(N = {N}, p = {p})$", pad=5)
     axs[0, 0].set_axis_off()
 
     # BOTTOM LEFT
     G_ER.plot(
-        signal_ER, ax=axs[1, 0], vertex_size=15, edge_width=0.5, edge_color="gray"
+        signal_ER,
+        ax=axs[1, 0],
+        vertex_size=15,
+        edge_width=0.5,
+        edge_color="gray",
+        colorbar=False,
+        limits=color_limits,
     )
-    axs[1, 0].set_title("", pad=20)
+    axs[1, 0].set_title("", pad=10)
     axs[1, 0].set_axis_off()
 
     # TOP RIGHT
-    G_Sensor.plot(s, ax=axs[0, 1], vertex_size=15, edge_width=0.5, edge_color="gray")
-    axs[0, 1].set_title(rf"Sensor Network $(N = {N})$", pad=20)
+    G_Sensor.plot(
+        s,
+        ax=axs[0, 1],
+        vertex_size=15,
+        edge_width=0.5,
+        edge_color="gray",
+        colorbar=False,
+        limits=color_limits,
+    )
+    axs[0, 1].set_title(rf"Sensor Network $(N = {N})$", pad=5)
     axs[0, 1].set_axis_off()
 
     # BOTTOM RIGHT
     G_Sensor.plot(
-        signal_S, ax=axs[1, 1], vertex_size=15, edge_width=0.5, edge_color="gray"
+        signal_S,
+        ax=axs[1, 1],
+        vertex_size=15,
+        edge_width=0.5,
+        edge_color="gray",
+        colorbar=False,
+        limits=color_limits,
     )
-    axs[1, 1].set_title("", pad=20)
+    mappable = axs[0, 0].collections[0]
+    fig.colorbar(mappable, ax=axs, location="right", pad=0.02, fraction=0.04)
+
+    plt.subplots_adjust(wspace=0.08, hspace=0.08)
+    axs[1, 1].set_title("", pad=10)
     axs[1, 1].set_axis_off()
 
     # Prevent label/title overlap
