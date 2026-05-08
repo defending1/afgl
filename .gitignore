@@ -19,7 +19,6 @@ out/
 *.log
 *.toc
 *.out
-*.pdf
 *.synctex.gz
 *.fdb_latexmk
 latexrun.db
