@@ -31,7 +31,16 @@ def compute_g_M(V: np.ndarray, T, s: np.ndarray, g, ch=0) -> np.ndarray:
 
         eigvals, U = SCLA.eigh_tridiagonal(alp, beta, lapack_driver="stevd")
     elif T_arr.ndim == 2 and T_arr.shape[0] == T_arr.shape[1]:
-        eigvals, U = SCLA.eig(T_arr)
+        if SCLA.issymmetric(T):
+            eigvals, U = SCLA.eigh(T_arr)
+        else:
+            # Use Schur-Parlett for the general case
+            g_ch = lambda x: g.evaluate(x)[ch]  # noqa: E731
+            gT = SCLA.funm(T, g_ch)
+            e_1 = np.zeros(T.shape[0])
+            e_1[0] = 1
+            y = LA.norm(s) * gT @ e_1
+            return V @ y
     else:
         raise ValueError(
             "T must be either a 2xN tridiagonal representation or a square matrix."
