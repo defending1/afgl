@@ -26,8 +26,8 @@ def plot_ex23_spy_grid():
         if hasattr(artist, "set_rasterized"):
             artist.set_rasterized(True)
         ax.set_title(
-            f"$(N={entry['N']}, p={entry['p']:.3f})$",
-            fontsize=9,
+            f"$(N={entry['N']}, p={entry['p']:.2f})$",
+            fontsize=15,
         )
         ax.set_xticks([])
         ax.set_yticks([])

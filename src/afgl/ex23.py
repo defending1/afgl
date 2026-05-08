@@ -56,7 +56,7 @@ class Ex23:
     def _experiment_params(self) -> tuple[np.ndarray, float, int, np.ndarray]:
         p_ex2 = 0.04
         M = 200
-        N_values = 50 * (2 ** np.arange(self.n))
+        N_values = 250 * (2 ** np.arange(self.n))
         p_values = 0.01 * (2 ** np.arange(self.n))
         return N_values, p_ex2, M, p_values
 
@@ -69,6 +69,7 @@ class Ex23:
         N_values, p_ex2, _, p_values = self._experiment_params()
         graphs_data: list[dict[str, Any]] = []
         for t_index in range(self.times):
+            print(f"Run {t_index} of {self.times}")
             for N in N_values:
                 graphs_data.append(self._build_graph_data(N, p_ex2, t_index))
             for p in p_values:
