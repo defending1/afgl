@@ -532,7 +532,7 @@ observe better soon in the experiments in Section \ref{sec:experiments}.
   \begin{subfigure}[b]{0.49\textwidth}
     \centering
     \includegraphics[width=\textwidth]{assets/plots/lanczos_vs_arnoldi_plot.pdf}
-    \caption{The algorithms stop when the threshold $ \tau = 10^{-6} $ is met.}
+    \caption{Algorithms stop when $ \|g_{l-3}-g_l\|_2 < \tau = 10^{-6} $.}
     \label{fig:avl_a}
   \end{subfigure}
   \hfill
@@ -540,7 +540,7 @@ observe better soon in the experiments in Section \ref{sec:experiments}.
   \begin{subfigure}[b]{0.49\textwidth}
     \centering
     \includegraphics[width=\textwidth]{assets/plots/lanczos_vs_arnoldi_plot_no_g.pdf}
-    \caption{Plot run until $ M $ is reached. We see that in most cases they match the complexity analysis.}
+    \caption{Algorithms run until last index $ M $.}
     \label{fig:avl_b}
   \end{subfigure}
   
@@ -639,7 +639,7 @@ We repeat the generation of these graphs $ 250 $ times to avoid graph randomness
 
 \begin{figure}[ht!]
   \centering
-  \caption{Plot of the sparsity patter of the generated matrices, as $ N,p $ varies.} 
+  \caption{Plot of the sparsity pattern of the generated matrices, as $ N,p $ varies.} 
   \label{fig:spy}
   \includegraphics[width=1\textwidth]{assets/plots/ex23_spy_grid.pdf}
 \end{figure}
