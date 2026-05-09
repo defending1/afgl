@@ -72,8 +72,8 @@ def run() -> None:
     G_ER = graphs.ErdosRenyi(N, p)
     G_S = graphs.Sensor(N)
 
-    l_err_ER, t_err_ER, signal_S = run_comparison_1_for_graph(G_ER, s, M, 0)
-    l_err_S, t_err_S, signal_ER = run_comparison_1_for_graph(G_S, s, M, 0)
+    l_err_ER, t_err_ER, signal_ER = run_comparison_1_for_graph(G_ER, s, M, 0)
+    l_err_S, t_err_S, signal_S = run_comparison_1_for_graph(G_S, s, M, 0)
 
     plot_graphs(G_ER, G_S, s, signal_ER, signal_S, N, p)
     plot_error_comparison(l_err_ER, t_err_ER, l_err_S, t_err_S)

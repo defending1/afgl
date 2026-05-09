@@ -40,6 +40,9 @@ def arnoldi(
         w1 = w1 - V[:, : j + 1] @ h1
         norm_w1 = LA.norm(w1)
 
+        if norm_w1 < 1e-14:
+            print("Arnoldi breakdown")
+            break
         # Temporary normalization
         v_tmp = w1 / norm_w1
 
@@ -50,7 +53,7 @@ def arnoldi(
         H[: j + 1, j] = h1 + h2
         H[j + 1, j] = norm_w1 * norm_w2
 
-        if H[j + 1, j] == 0:
+        if H[j + 1, j] < 1e-14:
             print("Arnoldi breakdown")
             break
         else:
