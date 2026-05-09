@@ -50,7 +50,7 @@ def test_if_H_is_symmetric():
     G.compute_laplacian("combinatorial")
     G.estimate_lmax()
     g = compute_g_itersine(G)
-    _, T, _ = arnoldi(G.L, s, M, g, 10e-20)
+    _, T, _ = arnoldi(G.L, s, M, g, tau=10e-20)
 
     assert LA.norm(T - T.T) < 10e-12
 

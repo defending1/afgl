@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 def plot_graphs(
     G_ER: "Graph", G_Sensor: "Graph", s, signal_ER, signal_S, N: int, p: float
 ) -> None:
-    """Visualization of signal being filtered on two different types of graphs.
+    """Visualize input and filtered signals on two graphs.
 
     Args:
         G_ER: Erdős-Rényi graph.
@@ -99,7 +99,7 @@ def plot_graphs(
 def plot_error_comparison(
     l_err_ER: np.ndarray, t_err_ER: np.ndarray, l_err_S: np.ndarray, t_err_S: np.ndarray
 ) -> None:
-    """Plots the error comparison between Lanczos approximation and true error.
+    """Plot Lanczos estimator vs true error for two graph families.
 
     Args:
         l_err_ER: Lanczos error estimate for Erdős-Rényi graph.

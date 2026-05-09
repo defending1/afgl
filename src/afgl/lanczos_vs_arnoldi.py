@@ -14,6 +14,8 @@ from afgl.util.lanczos import lanczos
 
 
 class LanczosVsArnoldi:
+    """Benchmark Lanczos variants vs Arnoldi on Erdős-Rényi graphs."""
+
     def __init__(self, out_dir: str = "./out"):
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
@@ -95,18 +97,18 @@ class LanczosVsArnoldi:
 
         g = compute_g_itersine(G)
 
-        eps = 10e-6
+        tau = 10e-6
 
         start_Lno = time.perf_counter()
-        _, _, debug_Lno = lanczos(L, s, M, g=g, eps_STOP=eps, ortho_type="partial")
+        _, _, debug_Lno = lanczos(L, s, M, g=g, tau=tau, ortho_type="partial")
         end_Lno = time.perf_counter()
 
         start_L = time.perf_counter()
-        _, _, debug = lanczos(L, s, M, g=g, eps_STOP=eps, ortho_type="full")
+        _, _, debug = lanczos(L, s, M, g=g, tau=tau, ortho_type="full")
         end_L = time.perf_counter()
 
         start_A = time.perf_counter()
-        _, _, j_A = arnoldi(L, s, M, g=g, eps_STOP=eps)
+        _, _, j_A = arnoldi(L, s, M, g=g, tau=tau)
         end_A = time.perf_counter()
 
         return {
@@ -119,7 +121,7 @@ class LanczosVsArnoldi:
             "Stopping index Lanczos (no ortho)": debug_Lno[2] + 1,
             "Stopping index Lanczos (full ortho)": debug[2] + 1,
             "Stopping index Arnoldi": j_A + 1,
-            "$\\varepsilon$": eps,
+            "$\\tau$": tau,
         }
 
     def run_exp(self) -> list[dict[str, Any]]:

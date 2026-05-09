@@ -10,11 +10,10 @@ if TYPE_CHECKING:
 
 
 def plot_itersine(G_Sensor: "Graph", G_ER: "Graph", Nf: int = 7) -> None:
-    """Plots the Itersine filter bank for two graphs side by side,
-    and the Laplacian eigenvalues on the x-axis.
+    """Plot the itersine filter bank for two graphs side by side.
 
     Args:
-        G_Sensor: Sensor graph
+        G_Sensor: Sensor graph.
         G_ER: Erdős-Rényi graph.
         Nf: Number of filters in the filter bank.
     """

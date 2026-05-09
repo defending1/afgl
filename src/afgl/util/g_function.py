@@ -5,6 +5,15 @@ from pygsp import filters
 
 
 def compute_g_itersine(G, Nf=7):
+    """Construct an itersine filter bank for a graph.
+
+    Args:
+        G: Graph.
+        Nf: Number of filters in the bank.
+
+    Returns:
+        A :class:`pygsp.filters.Itersine` filter bank instance.
+    """
     G.estimate_lmax()
     g = filters.Itersine(G, Nf=Nf)
     return g
@@ -12,7 +21,7 @@ def compute_g_itersine(G, Nf=7):
 
 def compute_g_M(V: np.ndarray, T, s: np.ndarray, g, ch=0) -> np.ndarray:
     """
-    Computes the approximation g_M (see [1]) using Lanczos
+    Compute the projected approximation ``g_M`` (see [1]) via Lanczos.
 
     Args:
         V: Lanczos basis
@@ -20,6 +29,14 @@ def compute_g_M(V: np.ndarray, T, s: np.ndarray, g, ch=0) -> np.ndarray:
         s: signal
         g: Itersine
         ch: Itersine selected channel
+
+    Returns:
+        The vector ``g_M`` approximating ``g(L)s``.
+
+    Notes:
+        ``T`` can be passed either as a symmetric banded representation with
+        shape ``(2, n)`` (as returned by :func:`afgl.util.T_tridiag.T_tridiag`)
+        or as a full square matrix.
 
     """
     T_arr = np.asarray(T)
@@ -53,14 +70,16 @@ def compute_g_M(V: np.ndarray, T, s: np.ndarray, g, ch=0) -> np.ndarray:
 
 
 def filter_signal_with_fourier(G, s: np.ndarray, g, ch=0) -> np.ndarray:
-    """Returns evaluation g(L)=Ug(Λ)U*s, which is the filtered signal using the
-    fourier basis.
+    """Evaluate ``g(L)s`` using the full Fourier basis.
 
     Args:
         G: Graph
         s: Signal
         g: Itersine
         ch: Itersine selected channel
+
+    Returns:
+        The filtered signal ``g(L)s``.
     """
     G.compute_fourier_basis()
     U = G.U

@@ -2,14 +2,14 @@ import numpy as np
 
 
 def T_tridiag(alp, beta):
-    """Constructs Lanczos T tridiagonal matrix in banded form.
+    """Construct a tridiagonal matrix in symmetric banded form.
 
     Args:
-        alp: Vector of alphas of size N
-        beta: Vector of betas of size N-1
+        alp: Diagonal entries (alpha), length ``n``.
+        beta: Subdiagonal entries (beta), length ``n-1``.
 
     Returns:
-        T: Symmetric banded matrix with shape (2, N), lower form
+        Symmetric banded matrix with shape ``(2, n)`` in SciPy lower-banded form.
     """
     alp = np.asarray(alp)
     beta = np.asarray(beta)

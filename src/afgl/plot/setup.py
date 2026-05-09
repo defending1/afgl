@@ -23,6 +23,6 @@ def latex_log_formatter(y: float, pos: int) -> str:
 
 
 def plot_setup() -> None:
+    """Apply plotting defaults (SciencePlots + matplotlib backend)."""
     plotting.BACKEND = "matplotlib"
     plt.style.use(["science"])
-    # TODO match font with document

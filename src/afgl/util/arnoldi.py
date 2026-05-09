@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import numpy.linalg as LA
@@ -8,19 +8,28 @@ from afgl.util.g_function import compute_g_M
 
 
 def arnoldi(
-    A: Union[np.ndarray, sp.spmatrix], s: np.ndarray, M: int, g=None, eps_STOP=None
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Computes an orthonormal basis for the Krylov subspace using the Arnoldi iteration.
+    A: Union[np.ndarray, sp.spmatrix],
+    s: np.ndarray,
+    M: int,
+    g=None,
+    tau: Optional[float] = None,
+) -> Tuple[np.ndarray, np.ndarray, int]:
+    """Compute an Arnoldi basis for the Krylov subspace.
+
+    Optionally applies an early-stopping check analogous to the Lanczos one,
+    based on the projected approximation ``g_j``.
 
     Args:
-        A: The input matrix (square), can be dense or sparse.
-        s: The starting vector.
-        M: The number of iterations/dimension of the Krylov subspace.
+        A: Input square matrix (dense or sparse).
+        s: Starting vector.
+        M: Maximum number of Arnoldi steps.
+        g: Optional function/filter used for the stopping criterion.
+        tau: Optional tolerance for early stopping.
 
     Returns:
-        V: Matrix whose columns form an orthonormal basis for the Krylov subspace.
+        V: Orthonormal basis vectors (columns).
         H: Upper Hessenberg matrix.
+        j: Last completed iteration index.
     """
     if sp.issparse(A):
         A = A.tocsr()
@@ -58,13 +67,13 @@ def arnoldi(
             break
         else:
             if j < M - 1:
-                if j > 2 and g is not None and eps_STOP is not None:
+                if j > 2 and g is not None and tau is not None:
                     g_j3 = compute_g_M(
                         V[:, : (j + 1) - 3], H[: (j + 1) - 3, : (j + 1) - 3], s, g
                     )
                     g_j = compute_g_M(V[:, : j + 1], H[: j + 1, : j + 1], s, g)
                     r_j = LA.norm(g_j - g_j3)
-                    if r_j < eps_STOP:
+                    if r_j < tau:
                         return V[:, : j + 1], H[: j + 1, : j + 1], j
 
                 V[:, j + 1] = w2 / norm_w2

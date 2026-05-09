@@ -6,9 +6,7 @@ from pygsp import graphs
 
 
 def plot_ex23_spy_grid():
-    """
-    Plots 6x2 spy grid of laplacians.
-    """
+    """Plot a 6x2 spy grid of Laplacians."""
     out_dir = Path("./out")
     plots_dir = out_dir / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)
@@ -38,6 +36,7 @@ def plot_ex23_spy_grid():
 
 
 def plot_ex23():
+    """Plot the timing correlation between Experiment 2 and 3 outputs."""
     out_dir = Path("./out")
     plots_dir = out_dir / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)

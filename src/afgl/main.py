@@ -8,6 +8,7 @@ from afgl.plot.setup import plot_setup
 
 
 def run() -> None:
+    """Entry point for running the project's experiments and plots."""
     plot_setup()
     LanczosVsArnoldi().run()
 

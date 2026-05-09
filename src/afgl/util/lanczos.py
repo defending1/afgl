@@ -11,17 +11,18 @@ from afgl.util.T_tridiag import T_tridiag
 def full_orthogonalization(
     V: np.ndarray, w: np.ndarray, j: int, gs_iterations=2
 ) -> np.ndarray:
-    """
-    Performs full re-orthogonalization using the double Gram-Schmidt process.
+    """Re-orthogonalize a vector against the full current basis.
+
+    Uses (by default) a double Gram-Schmidt pass for numerical stability.
 
     Args:
-        V: Matrix of basis vectors.
+        V: Basis matrix whose columns are the current Krylov vectors.
         w: Vector to orthogonalize.
-        j: Current iteration index.
-        gs_iterations: Number of grahm-schmidt iterations (2 for safety)
+        j: Current iteration index (orthogonalize against ``V[:, : j+1]``).
+        gs_iterations: Number of Gram-Schmidt passes (2 is a common safe choice).
 
     Returns:
-        Orthogonalized vector w.
+        The orthogonalized vector ``w``.
     """
     for _ in range(gs_iterations):
         # Remember that numpy slicing is not inclusive, thus mathematically we are
@@ -34,18 +35,20 @@ def full_orthogonalization(
 def classic_orthogonalization(
     V: np.ndarray, w: np.ndarray, alp: np.ndarray, beta: np.ndarray, j: int
 ) -> np.ndarray:
-    """
-    Performs classic Lanczos orthogonalization against the last two basis vectors.
+    """Orthogonalize against the last one or two Lanczos vectors.
+
+    This is the classic three-term Lanczos recurrence (cheap but less stable than
+    full re-orthogonalization when orthogonality is lost).
 
     Args:
-        V: Matrix of basis vectors.
+        V: Basis matrix.
         w: Vector to orthogonalize.
-        alp: Array of diagonal elements alpha.
-        beta: Array of off-diagonal elements beta.
+        alp: Diagonal coefficients (alpha).
+        beta: Off-diagonal coefficients (beta).
         j: Current iteration index.
 
     Returns:
-        Orthogonalized vector w.
+        The orthogonalized vector ``w``.
     """
     w = w - alp[j] * V[:, j]
     if j > 0:
@@ -59,26 +62,29 @@ def lanczos_iteration(
     M: int,
     g: Optional[Any],
     full_ortho: bool,
-    eps_STOP: Optional[float] = None,
+    tau: Optional[float] = None,
     gs_iterations=2,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, str, int]:
-    """
-    Performs the Lanczos iteration process.
+    """Run the core Lanczos iteration.
+
+    Optionally uses a simple stopping criterion based on the bound
+    ``||g_{j} - g_{j-3}|| < tau`` (computed via the projected problem).
 
     Args:
         L: Symmetric input matrix (dense or sparse).
         s: Starting vector.
-        M: Number of iterations.
-        g: Function to evaluate for stopping criteria.
-        full_ortho: Whether to use full re-orthogonalization.
-        eps_STOP: Tolerance for the stopping criterion.
+        M: Maximum number of Lanczos steps.
+        g: Optional filter/function used for the stopping criterion.
+        full_ortho: If True, use full re-orthogonalization.
+        tau: Optional tolerance for early stopping.
+        gs_iterations: Gram-Schmidt passes for full re-orthogonalization.
 
     Returns:
-        V: Matrix of basis vectors.
-        alp: Diagonal elements of the tridiagonal matrix.
-        beta: Off-diagonal elements of the tridiagonal matrix.
-        break_reason: String describing why the iteration stopped.
-        j: Number of iterations completed.
+        V: Orthonormal basis vectors (columns).
+        alp: Diagonal of the projected tridiagonal matrix.
+        beta: Off-diagonal of the projected tridiagonal matrix.
+        break_reason: Why the loop stopped ("No", "$\\beta_j=0$", or "Bound").
+        j: Last completed iteration index.
     """
     if sp.issparse(L):
         L = L.tocsr()
@@ -107,7 +113,7 @@ def lanczos_iteration(
                 break_reason = "$\\beta_j=0$"
                 return V[:, : j + 1], alp[: j + 1], beta[:j], break_reason, j
             else:
-                if eps_STOP is not None and g is not None and (j + 1) - 3 > 0:
+                if tau is not None and g is not None and (j + 1) - 3 > 0:
                     T = T_tridiag(alp[: j + 1], beta[:j])
                     g_j3 = compute_g_M(
                         V[:, : (j + 1) - 3],
@@ -118,7 +124,7 @@ def lanczos_iteration(
                     g_j = compute_g_M(V[:, : j + 1], T[:, : j + 1], s, g)
                     r_j = LA.norm(g_j - g_j3)
 
-                    if r_j < eps_STOP:
+                    if r_j < tau:
                         break_reason = "Bound"
                         return V[:, : j + 1], alp[: j + 1], beta[:j], break_reason, j
 
@@ -132,19 +138,20 @@ def lanczos(
     s: np.ndarray,
     M: int,
     g: Optional[Any] = None,
-    eps_STOP: Optional[float] = None,
+    tau: Optional[float] = None,
     ortho_type: Optional[str] = "auto",
     gs_iterations: Optional[int] = 2,
 ) -> Tuple[np.ndarray, np.ndarray, List[Any]]:
     r"""
-    Lanczos extended method with optional re-orthogonalization.
+    Compute a Lanczos basis (with optional re-orthogonalization).
 
     Args:
         L: Real valued NxN symmetric matrix (dense or sparse).
         s: Starting vector of size N.
         M: Target basis size.
         g: Optional function to evaluate for stopping.
-        eps_STOP: Optional tolerance for stopping when ||g_{M+j} - g_{M}|| < eps_STOP.
+        tau: Optional tolerance for early stopping.
+            The stopping check uses a lag-3 bound: ``||g_j - g_{j-3}|| < tau``.
 
     Returns:
         V: Matrix with orthonormal columns forming the basis.
@@ -152,28 +159,28 @@ def lanczos(
         info: List containing [full_ortho_used, break_reason, iterations_completed].
     """
     full_ortho_triggered = False
-    EPS_ORTHO = 10e-10
+    delta = 1e-9
 
     if ortho_type == "auto":
         V, alp, beta, break_reason, j = lanczos_iteration(
-            L, s, M, g, False, eps_STOP, gs_iterations
+            L, s, M, g, False, tau, gs_iterations
         )
         # Check basis orthogonality
         Id = np.eye(len(alp))
 
-        if LA.norm(V.T @ V - Id) > EPS_ORTHO:
+        if LA.norm(V.T @ V - Id) > delta:
             V, alp, beta, break_reason, j = lanczos_iteration(
-                L, s, M, g, True, eps_STOP, gs_iterations
+                L, s, M, g, True, tau, gs_iterations
             )
             full_ortho_triggered = True
     elif ortho_type == "full":
         V, alp, beta, break_reason, j = lanczos_iteration(
-            L, s, M, g, True, eps_STOP, gs_iterations
+            L, s, M, g, True, tau, gs_iterations
         )
         full_ortho_triggered = True
     elif ortho_type == "partial":
         V, alp, beta, break_reason, j = lanczos_iteration(
-            L, s, M, g, False, eps_STOP, gs_iterations
+            L, s, M, g, False, tau, gs_iterations
         )
         full_ortho_triggered = False
     else:
