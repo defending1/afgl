@@ -4,7 +4,7 @@ Accelerated Filtering on Graphs using the Lanczos method (AFGL). This repo
 contains a Lanczos/Arnoldi implementation for graph Laplacian filtering, plus
 scripts to reproduce the experiments and plots.
 
-Report: [report/main.pdf](report/main.pdf)
+[Report](report/report.pdf)
 
 ---
 
