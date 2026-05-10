@@ -134,11 +134,12 @@
 \maketitle
 
 \begin{abstract}
-    \noindent In the following, we implement Lanczos and Arnoldi algorithms to study the problem of
-    matrix functions evaluation in the context of graph signal processing. We begin by studying and
-    assessing the computational cost of these algorithms and their orthogonalization variants. Then, through a series of
-    experiments, we consider the iteration residual, to relate it with the true error and to study
-    how it affects convergence.
+    \noindent We study Krylov methods for the fast evaluation of graph filters of the form $ g(\L)s
+    $, where $ \L $ is the (symmetric) graph Laplacian in the context of graph signal processing. We
+    implement Lanczos and Arnoldi algorithm and we compare different orthogonalization strategies, together
+    with a convergence-based stopping rule. We first discuss the computational costs of these
+    variants. Then, through the experiments on Erdős-Rényi graphs we relate the iteration error
+    to the true error. Finally, we report how runtime scales with graph size and sparsity.
 \end{abstract}
 
 {\setlength{\parskip}{0em}
@@ -146,8 +147,7 @@
 
 \section{Introduction}
 
-We introduce basic graph theory concepts and we recall some theoretical results used in the
-experiments.
+We introduce basic graph theory concepts and we recall some theoretical results used troughout the report.
 
 \subsection{Signal processing on graphs}
 
@@ -217,18 +217,18 @@ In matrix notation, applying a filter to a graph $ \G $ corresponds to the opera
 \begin{equation*}
   s^\prime \defeq g(\L)s = U g(\L) U^{*}s.
 \end{equation*}
-However, computing the Fourier basis for $ \L $ is computationally expensive and unstable for large
-graphs. This motivates the idea for using the Lanczos method for evaluating the matrix function $ g(\L)$.
+However, computing the Fourier basis for $ \L $ is computationally expensive for large
+graphs, as it requires the full eigendecomposition of $ \L $. This motivates the idea for using the Lanczos method for evaluating the matrix function $ g(\L)$.
 
 We consider Erdős-Rényi and Sensor graphs, following PyGSP's \cite{pygsp} definitions.
 \begin{definition}[Erdős-Rényi graph]
   \label{def:ER}
-  We define the Erdős-Rényi graph $ \G_{N,p} $ with $ N $ nodes, and probability $ p $, as the graph
+  We define the Erdős-Rényi graph $ \G(N,p) $ with $ N $ nodes, and probability $ p $, as the graph
   constructed by randomly connecting two nodes independently of any other edge, with probability $ p $.
 \end{definition}
 \begin{definition}[Sensor graph]
   \label{def:Sensor}
-  A sensor graph $ \G_N $ is the graph constructed by picking $ N $ points on the square $ \left[
+  A sensor graph $ \G(N) $ is the graph constructed by picking $ N $ points on the square $ \left[
   0,1 \right] \times \left[ 0,1 \right] $ and connecting points with edges using $ k $ nearest
   neighbours.
 \end{definition}
@@ -261,7 +261,7 @@ From the Arnoldi relation,
            & & h_{l,l-1} & h_{l,l}.
   \end{bmatrix},
 \end{equation*}
-we can derive the Lanczos method for a symmetric, positive defined matrix $ A $. Setting
+we can derive the Lanczos method for a symmetric matrix $ A $. Setting
 \begin{equation*}
 \alpha_l \defeq h_{l,l},\hspace{20pt}\beta_l \defeq h_{l+1,l}.
 \end{equation*}
@@ -270,7 +270,7 @@ matrix, is also symmetric; therefore it is tridiagonal---thus we rename it $ T_l
 the Arnoldi relation takes the form:
 
 \begin{equation*}
-  AV_l = V_l \alpha_l  + \beta_l v_{l+1}e_l^{T}, \\ \hspace{20pt}
+  AV_l = V_l T_l  + \beta_l v_{l+1}e_l^{T}, \\ \hspace{20pt}
   T_l = V_l^{\top} A V_l = \begin{bmatrix}
     \alpha_1 & \beta_1 \\
     \beta_1 & \ddots & \ddots \\
@@ -279,7 +279,7 @@ the Arnoldi relation takes the form:
   \end{bmatrix}.
 \end{equation*}.
 
-We now introduce a useful result for evaluating a matrix function using the Arnoldi projection.
+We now introduce a useful approximation for evaluating a matrix function using the Arnoldi projection.
 \begin{proposition}
  Consider the filter $ g : [0, \lambda_{\text{max}}] \to \R$ and a signal vector $ s \in \R^N $.
  Then the Lanczos method approximates $ g(\L)s $ with: \footnote{This result holds in general for any function $f :\Omega \to \C$, where $ \Omega \subset \Lambda(A) $.}
@@ -296,13 +296,12 @@ substitute $ g(T_M) = Ug(\Lambda)U^{\top} $ in the equation above.
 
 We begin by defining quantities that will be useful in describing our implementation of the algorithms.
 
-\begin{definition}(Errors)
+\begin{definition}[Errors]
   \label{def:errors}
-  We define the Lanczos \emph{iteration error} as $\norm{g_{M+j} - g_M}_2 $, where $ j $ is small,
+  We define the \emph{iteration error} as $\norm{g_{M+j} - g_M}_2 $, where $ j $ is small,
   and the \emph{true error} as $ \norm{e_M}_2 = \norm{g(\L)s - g_M}_2 $.
 \end{definition}
-We also define error bounds:
-\begin{definition}
+\begin{definition}[Error bounds]
   We indicate with $ \tau \eqdef \tau_{\text{STOP}} $ the algorithm stopping threshold for the
   inequality
   $ \| g_{M+3} -g_M \|_2< \tau $, and with $ \delta \eqdef \delta_{\text{ORTH}} $ the orthogonality
@@ -324,8 +323,9 @@ evaluated in the Lanczos process using Equation \ref{eq:projection}.
 Recall that $  g_M \defeq \|s\|_2V_Mg(T_M)e_1
 $, where $ g(T_M) $ is computed by diagonalizing $ T_M $: because $ T_M $ is symmetric, real and tridiagonal, 
 computing its eigendecomposition is stable and efficient; indeed the structure of $ T_M $ allows us
-to use a divide and conquer algorithm for eigenvalues, and we use \texttt{scipy.linalg.eigh\_tridiagonal}
-routine from Scipy, which has cost $ O(N^2) $.
+to use a divide and conquer algorithm for eigenvalues. We choose to represent it in banded form
+(isolating $ \alpha_M $ and $ \beta_M $) and using \texttt{scipy.linalg.eigh\_tridiagonal} routine
+from Scipy, which costs $ O(N^2) $.
 
 \begin{algorithm}[ht!]
   \caption{Modified Lanczos method in floating point arithmetic.}
@@ -339,20 +339,20 @@ routine from Scipy, which has cost $ O(N^2) $.
     \State Initialise $ V \leftarrow \mathbf{0}^{N \times M} $ , $ \alpha \leftarrow \mathbf{0}^N $,
     and $ \beta \leftarrow \mathbf{0}^{N-1}$
 
+    \State $ v_1 \leftarrow \frac{b}{\|b\|} $
+
     \For{$ j = 1, \dots, M-1 $}
     \State $ w \leftarrow Av_j  $
     \State $ \alpha_j \leftarrow v_j^{\top} w $
 
-    \State $\left\{
-    \begin{array}{ll}
-        w \leftarrow w - \alpha_j v_j&  \text{No reorthogonalization} \\
-        \text{\textbf{if} } j>0 \text{ \textbf{then} } w \leftarrow w - \beta_j v_{j-1}\text{ \textbf{end
-    if}} & \\ \\
-        w = w - \sum_{i=1}^j (w^{\top}v_i)v_i & \text{Full reorthogonalization} \\
-        w = w - \sum_{i=1}^j (w^{\top}v_i)v_i 
-    \end{array}
-    \right.$
-    \If{$ j < M $}
+    \If{Partial reorthogonalization}
+        \State $w \leftarrow w - \alpha_j v_j$
+        \State \text{\textbf{if} } $j>0$ \text{ \textbf{then} } $w \leftarrow w - \beta_{j-1} v_{j-1}$\text{ \textbf{end
+    if}}
+    \ElsIf{Full reorthogonalization}
+    \State $w = w - \sum_{i=1}^j (w^{\top}v_i)v_i $
+    \State $w = w - \sum_{i=1}^j (w^{\top}v_i)v_i $
+    \EndIf
     \State $ \beta_j = \|w\|_2 $
     \If{$ \beta_j = 0 $}
       \State 
@@ -366,7 +366,6 @@ routine from Scipy, which has cost $ O(N^2) $.
       \EndIf
       \State $ v_{j+1} = \frac{w}{\beta_j} $
     \EndIf
-    \EndIf
     \EndFor
     \State \Return $ V_M, \alpha_{1:M}, \beta_{1:M-1} $.
   \end{algorithmic}
@@ -376,7 +375,7 @@ routine from Scipy, which has cost $ O(N^2) $.
 \begin{algorithm}[ht!]
   \caption{Approximation of $ g(\L)s $ using Lanczos.}
   \label{alg:g_evaluation}
-  \begin{algorithmic}
+  \begin{algorithmic}[1]
     \State \textbf{Input:} Function $ g $, Matrix $ T $, signal $ s $.
     \State $ \lambda, U \leftarrow $ diagonalize($ T $)  \Comment{Here $ \lambda $ is the vector of
     eigenvalues.}
@@ -391,7 +390,7 @@ routine from Scipy, which has cost $ O(N^2) $.
 \begin{algorithm}[ht!]
   \caption{Evaluation of $ g(\L)s $ using Fourier basis.}
   \label{alg:g_evaluation_fourier}
-  \begin{algorithmic}
+  \begin{algorithmic}[1]
     \State \textbf{Input:} Function $ g $, Graph $ \G $, signal $ s $.
     \State $ \Lambda,U \leftarrow \text{Fourier\_basis}( \G )$
     \State \Return $ U g(\Lambda) U^{\top}s $
@@ -402,11 +401,11 @@ routine from Scipy, which has cost $ O(N^2) $.
 \begin{algorithm}[ht!]
   \caption{Orthogonalization selection.}
   \label{alg:orthosel}
-  \begin{algorithmic}
+  \begin{algorithmic}[1]
     \State \textbf{Input: $\delta = 10^{-10}$}.
-    \State $V, T, j \leftarrow $ Lanczos(A,b, classic)
-    \If {$ \|V^{\top} V - I\|_2 < \delta $}
-    \State $ V, T,j \leftarrow $ Lanczos(A,b, full)
+    \State $V, T, j \leftarrow $ Lanczos(A,b, Partial)
+    \If {$ \|V^{\top} V - I\|_2 > \delta $}
+    \State $ V, T,j \leftarrow $ Lanczos(A,b, Full)
       \EndIf
   \end{algorithmic}
 \end{algorithm}
@@ -434,18 +433,19 @@ Here we provide an overview of the computational cost of the algorithms we teste
   $, plus the matrix vector product at each step with $ A $, hence again $ O(M^2N + M \cdot
   \text{nnz(A)}) $. Cost is higher when evaluating $ g $, due to the fact that matrix $ H $ is not
   perfectly symmetric (it is up to a small epsilon) and not tridiagonal (it has some small
-  perturbations). Hence we must use the Schur-Parlett algorithm to compute the matrix function
-  (which we use in the routine \texttt{scipy.linalg.funm}), which adds up to $ O(M N^3)$ complexity.
+  perturbations outside the diagonals). Hence we must use the Schur-Parlett algorithm to compute the matrix function
+  (which we use in the routine \texttt{scipy.linalg.funm}), which adds $ O(N^3)$ complexity per
+  iteration, and in total $ O(MN^3) $ in the worst case.
  \end{itemize}
 
 We observe that in Lanczos computing $ g $ it not necessarily a drawback when $ A $ is dense or when few iterations are performed.
 It should also be noted that these algorithms suffer from a significant $ O(M N) $ memory cost for storing $ V_M $.
 
 
-\subsubsection{Why double orthogonalization?}
+\subsubsection{Motivating double orthogonalization}
 
   From the experimental setting in Section \ref{ssec:ex1}, we observed that the orthogonality of the
-  basis $ V $ with Arnoldi was worse than Lanczos basis. Double orthogonalization showed good
+  basis $ V $ with Arnoldi/Lanczos with a single orthogonalization step was worse than with standard Lanczos, while double orthogonalization showed good
   results. One reason could be that the Laplacian matrices that we are considering are badly
   conditioned. The following example motivates this choice:
 \begin{example}
@@ -456,14 +456,15 @@ The associated Laplacian $ \L $ is terribly conditioned, indeed $ k_2(\L) = 2.36
 
   \end{example}
   As we can observe in Table \ref{table:orthog}, orthogonalizing twice against the previous
-  basis vectors yields a better orthogonal basis $ V$; while a single Gram-Schmidt iteration performs worse than standard Lanczos.
+  basis vectors yields a better orthogonal basis $ V$, while a single Gram-Schmidt iteration performs worse than standard Lanczos.
 
 
 \subsubsection{Comparing Lanczos with Arnoldi}
 
 Here we do a short numerical comparison of Lanczos and Arnoldi with double orthogonalization, which
-should match the cost analysis from Section \ref{ssec:cost}. Algorithm
-\ref{alg:arnoldi_double_ortho} reports our implementation of Arnoldi.
+should match the cost analysis from Section \ref{ssec:cost}. We do this to justify 
+the need for using Lanczos with double orthogonalization rather that Arnoldi. In Algorithm
+\ref{alg:arnoldi_double_ortho} we report our implementation of Arnoldi.
 
 \begin{algorithm}[ht!]
   \caption{Arnoldi with double orthogonalization.}
@@ -484,6 +485,7 @@ should match the cost analysis from Section \ref{ssec:cost}. Algorithm
         \State \Comment{First orthogonalization}
         \State $ h_1 \leftarrow V_j^\top w_1 $
         \State $ w_1 \leftarrow w_1 - V_j \cdot h_1 $
+        \State \text{\textbf{if}} $w_1 = 0$ \text{ \textbf{then break} } \text{\textbf{end if}}
         \State $ v_{j+1} \leftarrow w_1 / \|w_1\|_2 $ 
         
         \State \Comment{Second orthogonalization pass}
@@ -513,15 +515,16 @@ should match the cost analysis from Section \ref{ssec:cost}. Algorithm
 
 We consider the function $ g $ used in the experiments and $ N \in \left\{ 300, 400,
 500, \dots, 6000\right\} $, $ M = 200 $ and $ p = 0.04 $. 
-In Figure \ref{fig:avl} and Table \ref{table:avl} we observe different correlations when running
+In Figure \ref{fig:avl} and Table \ref{table:avl}, we observe different correlations when running
 the algorithm with residual break and until $ M $. In the former, described in Figure \ref{fig:avl_a}, Lanczos
 with full orthogonalization outperforms the other two. In the latter in Figure
 \ref{fig:avl_b}, curves generally match theoretical results, despite some small cases of the
 full-orthogonalization variant.
-One reason for full orthogonalization converging faster than predicted in the complexity analysis,
-is probably due to the spectrum of $ T_l $ falling outside the definition interval of $ g $, as we will
-observe better soon in the experiments in Section \ref{sec:experiments}. In Figure \ref{fig:avl_a}
-we see that Arnoldi slower than the other two, which could be caused by the Schur-Parlett routine bottleneck.
+Looking better at Figure \ref{fig:avl_a}, we see that full orthogonalization is converging faster than predicted in the complexity
+analysis due some eigenvalues of $ T_l $ being evaluated at zero by $ g $, as we will
+observe better soon in the experiments in Section \ref{sec:experiments}. Also Arnoldi is slower than
+the other two algorithms, which confirms the increased complexity due to Schur-Parlett method for
+evaluating the function.
 
 \begin{figure}[ht!]
   \centering
@@ -558,12 +561,11 @@ we see that Arnoldi slower than the other two, which could be caused by the Schu
 In the following section we generate random Erdős-Rényi and Sensor graphs, as defined in Definitions
 \ref{def:ER} and \ref{def:Sensor}, to study the Lanczos algorithm's accuracy and performance. 
 
-\subsection{Comparing global error with projection error}
+\subsection{Comparing global error with iterate difference}
 \label{ssec:ex1}
 
 We want to numerically verify the approximation in Equation
-\eqref{eq:projection} by relating the residuals in Definition \ref{def:errors}, which represent the
-algorithmic error and the ground truth $ g(\L) $.
+\eqref{eq:projection} by relating the residuals in Definition \ref{def:errors}.
 Let's recall some quantities that will be useful in this section: $ N $ is the number of graph
 nodes and size of the Laplacian $ \L $, $ M $ is the maximum size of the Krylov subspace, and $ p $
 the probability of the graph. 
@@ -579,18 +581,44 @@ is feasible for the small graph that we are considering.
 
 We consider the function $ g(t)
 = \sin(\frac{1}{2}\pi \cos^2(\pi t)) \chi_{\left[ -\frac{1}{2}, \frac{1}{2} \right]}$, which we
-adapt to the graph spectrum, using the \texttt{Itersine} class in Pygsp in Figure
+adapt to the graph spectrum inteval $ [0, \lambda_{\text{max}}] $, and it is implmented in the \texttt{Itersine} class in Pygsp in Figure
 \ref{fig:itersine}. Unfortunately, the authors in \cite{susnjara2015} apply an additional
-transformation to adapt $ g $ to eigenvalue distribution of $ \L $, which we were not able to reproduce
-(despite many trials) as it was not documented both in the article and library. Using the algorithm
+transformation to $ g $ to match the eigenvalue distribution of $ \L $, which is showed in
+\ref{fig:article_itersine}. We were not able to
+reproduce it (despite many trials) as it seemed not documented both in the article and library.
+Without this adaptation, when we evaluate the eigenvalues of $ T_l $ using $ g $, some eigenvalues
+vanish, especially in the case of Erdős-Rényi graphs.
+Using the algorithm
 described in Section \ref{ssec:algo}, and computing the errors $ \|e_l\|_2 $ and $ \|g_{l+3} - g_l
-\|_2 $ for every $ l = 1,\ldots, M $, we obtain the plot in Figure \ref{fig:ex1_estimate}:
+\|_2 $ for every $ l = 1,\ldots, M $, we obtain the plot in Figure \ref{fig:ex1_estimate}.
 
 \begin{figure}[ht!]
   \centering
   \caption{Itersine plot.} 
   \includegraphics[width=1.0\textwidth]{assets/plots/itersine_comparison.pdf}
   \label{fig:itersine}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/plots/filter\_sensor.pdf}
+        \caption{Itersine of sensor graph.}
+        \label{fig:article_a}
+    \end{subfigure}
+    \hfill % Adds spacing between the two subfigures
+    % Second subfigure
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        % Extracting the plot from the second page
+        \includegraphics[width=\textwidth]{assets/plots/filter\_erdos.pdf}
+        \caption{Itersine of Erdős-Rényi graph.}
+        \label{fig:article_a}
+    \end{subfigure}
+    
+    \caption{Itersine plot reported in \cite{susnjara2015}.}
+    \label{fig:article_itersine}
 \end{figure}
 
 \begin{figure}[ht!]
@@ -600,12 +628,12 @@ described in Section \ref{ssec:algo}, and computing the errors $ \|e_l\|_2 $ and
   \label{fig:ex1_estimate}
 \end{figure}
 
-Let's analyze Figure \ref{fig:ex1_estimate}: we immediately observe that the error curves are
+Looking closely at Figure \ref{fig:ex1_estimate}: we immediately observe that the error curves are
 close, and that their value is decreasing, which shows that the approximation of $ g $ gains
-precision as the basis $ V_l $ gets larger. We also see how the eigenvalues of $ \L $ and $ T $ influence the steepness and smoothness of the curves. Indeed, when eigenvalues fall outside $
+precision as the basis $ V_l $ gets larger. We also see how the eigenvalues of $ \L $ and $ T $ influence the steepness and smoothness of the curves: when eigenvalues fall outside $
 [-\frac{1}{2}, \frac{1}{2}] $, we see that the curves rapidly reach machine precision: this is
 unfortunately caused by issue explained above. We also
-observe evident lack of smoothness in the iteration error curve. We believe that since $ g(t) = 0 $
+observe evident lack of smoothness in the iteration error curve: we believe that since $ g(t) = 0 $
 for $ t\in \R \setminus \left[ -\frac{1}{2}, \frac{1}{2} \right]$, the eigenvalues of $ T $ tend
 to jump in and out of the interval $ [-\frac{1}{2}, \frac{1}{2}] $, causing spikes. Hence, we found
 that this method is sensitive to the eigenvalues distribution of the Laplacian. 
@@ -620,10 +648,10 @@ In this experiment, we will study the performance correlation for running Lanczo
 graphs $ \G(N,p) $ and comparing execution time when only $ N $ varies and when only $ p $ varies. 
 
 \begin{remark}[Role of $ N $ and $ p $]
-Erdős-Rényi graphs, $ N $ and $ p $ dictate the expected properties of the matrix $ \L $, that is dimension and
-sparsity, respectively. In fact, when $ N $ increases, we expect higher computational cost due
+Erdős-Rényi graphs, the parameters $ N $ and $ p $ determine dimension and
+sparsity of $ \L $, respectively. In fact, when $ N $ increases, we have a larger Laplacian and we expect higher computational cost due
 to the increased cost of the matrix-vector multiplication $ \L v $ and to compute the eigenvalues of
-$ T_M $, but when $ p $ increases, $ \L
+$ T_M $. When $ p $ increases, $ \L
 $ becomes more dense, requiring more floating point operations for the algorithm and so increasing
 runtime. Figure \ref{fig:spy} shows how this property in a sample of the matrices.
 \end{remark}
@@ -641,8 +669,7 @@ In the following experiment, we generate two sample datasets, letting $ n = 6 $,
   \item $ N $ varies in $ \{ 250,500,\dots,2^n \cdot 250\} $, $ \tilde{p} = 0.04 $.
   \item $ p $ varies in $ \{ 0.01,0.02,\dots,2^n \cdot 0.01 \}$, $ \tilde{N} = 1000$.
 \end{enumerate}
-By abuse of notation we will often refer to the tuple $ (N,p) $ to indicate the columns of the datasets above, for example $ (N,p) =
-(500,0.02) $, as we are interested in correlating increasing couples of $ (N,p)  \in \{ (250,0.01), 
+By abuse of notation we will often refer to the tuple $ (N,p) $ to indicate the columns of the datasets above as we are interested in correlating increasing couples of $ (N,p)  \in \{ (250,0.01), 
 (500,0.02), \ldots,  (8000, 0.32)\}$.
 We repeat the generation of these graphs $ 200 $ times to avoid bias from graph randomness.
  
@@ -674,17 +701,18 @@ is approximated better by the algorithm, hence time start growing stably from $ 
 see a significant 4x gap from $ N = 4000 $ and $ N = 8000 $.
 When $ p $ varies the matrices become dense and we expect longer computational times, as the matrix
 may lose orthogonality for dense matrices, but we see the opposite in Table
-\ref{table:group_table_2}. Indeed we see time for $ p = 0.01$ more than a 
-tenth of second, much more than the other cases, and then oscillating for other values of $ p $,
+\ref{table:group_table_2}. Indeed we see time for $ p = 0.01$ is more than a 
+tenth of second, which is higher than the other cases, and then oscillates for other values of $ p $,
 where the $ \tau $ bound stops the algorithm early. We believe that this is due to the phenomenon we already observed in Section \ref{ssec:ex1}: the error $ g_{l-3} - g_l $ reaches machine
 precision fast as depicted in Figure \ref{fig:ex1_estimate}, because the eigenvalues of the input
-matrix $ \L $, which becomes dense as $ p $ grows, start falling outside the domain of $ g $.
+matrix $ \L $, which becomes dense as $ p $ grows, are mapped to zero by $ g $.
 
-In general, in Figure \ref{sfig:loglog_g} we see a linear growth with few outliers, where times for
-increasing $ p $ result slower than those of $ N $.
-
-In the next section we try to run
-the procedure until the index $ M $ to verify how the error bound is influencing performance.
+In general Figure \ref{sfig:loglog_g} shows a linear growth with few outliers, where times for
+increasing $ N $ result slower than those of $ g $. Hence for this stopping criteria the size of $
+\L $ influences execution time more than the sparsity. We believe that we could see a similar
+pattern in case the algorithm runs with a different $ g $, as the added complexity is due the
+evaluation procedure. In the next section we try to run
+the procedure until the index $ M $, to verify how the error bound is influencing performance.
 
 \begin{table}[ht!]
   \centering
@@ -695,7 +723,7 @@ the procedure until the index $ M $ to verify how the error bound is influencing
 
 \begin{table}[ht!]
   \centering
-  \caption{Stats when $ N $ and $ p $ varies (top and bottom) with $ \tau $ bound.}
+  \caption{Stats when $ N $ and $ p $ varies (top and bottom) with iteration bound.}
   \label{table:group_table_2}
   \input{assets/tables/group_table_2.tex}
 \end{table}
@@ -707,7 +735,7 @@ the procedure until the index $ M $ to verify how the error bound is influencing
   \begin{subfigure}[b]{0.80\textwidth}
     \centering
     \includegraphics[width=\textwidth]{assets/plots/correlation_23.pdf}
-    \caption{Correlation stopping with $ \tau $ bound.}
+    \caption{Correlation when stopping iteration bound.}
     \label{sfig:loglog_g}
   \end{subfigure}
   \hfill
@@ -726,10 +754,8 @@ the procedure until the index $ M $ to verify how the error bound is influencing
 \subsubsection{Run with selective orthogonalization, no error bounds and $ \delta = 10^{-5}$}
 \label{ssec:nobound}
 
-In Figure \ref{sfig:loglog_no_g} and Table \ref{table:group_table_2_no_g} we observe an almost-linear correlation, with few outliers 
-which could be caused by the fact that full orthogonalization is
-triggered in some cases, causing two runs of the algorithm. We believe that we could see a
-similar pattern (or more correlation) in case the algorithm runs with a different $ g $.
+In Figure \ref{sfig:loglog_no_g} and Table \ref{table:group_table_2_no_g} we observe an
+almost-linear correlation, with few outliers---these could be caused by the fact that full orthogonalization is triggered in some cases, causing two runs of the algorithm.
 
 \begin{table}[ht!]
   \centering
@@ -741,9 +767,9 @@ similar pattern (or more correlation) in case the algorithm runs with a differen
 \section{Conclusions \& future work}
 
 To conclude, we observed how bound and orthogonalization techniques can improve performance
-trough early breaks, especially for large and dense matrices. However, when the function $ g $ is
-not adapted to the spectrum, these bounds can start to be
-unreliable and terminate the algorithm too early, when the Krylov subspace may be not well-formed yet.
+trough early breaks, especially for large and dense matrices. However, without the precise
+rescaling of $ g $, these bounds can start to be
+unreliable and terminate the algorithm early, which may provide an insufficient approximation of the Krylov basis.
 We didn't address how the high memory cost of $ O(N M) $ of Lanczos could be avoided by
 using a two-step implementation, or how we could use selective reorthogonalization as described in
 \cite{demmel1997} to reduce time complexity, because both are the scope of this work.
